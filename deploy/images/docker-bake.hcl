@@ -1,5 +1,5 @@
 // docker-bake.hcl — 多架构镜像构建定义。
-// 见 deploy/Makefile（build/push 入口）和 docs/deploy/README.md。
+// 见 deploy/Makefile（build/push/deploy 入口）。
 
 variable "BUILD_NPM_REGISTRY" {
   default = ""
@@ -41,6 +41,10 @@ variable "GEMINI_CLI_VERSION" {
   default = "0.39.1"
 }
 
+variable "GOST_IMAGE" {
+  default = "gogost/gost:3.2.6"
+}
+
 # 包管理代理参数（所有可联网构建的 target 继承）。
 target "_proxyable" {
   args = {
@@ -66,12 +70,14 @@ group "default" {
     "platform-auth-service",
     "platform-model-service",
     "platform-provider-service",
+    "platform-provider-orchestration-service",
     "platform-egress-service",
     "platform-profile-service",
     "platform-support-service",
     "platform-cli-runtime-service",
     "platform-agent-runtime-service",
     "platform-chat-service",
+    "platform-egress-forwarder",
     "console-api",
     "console-web",
     "showcase-api",
@@ -89,12 +95,14 @@ group "platform" {
     "platform-auth-service",
     "platform-model-service",
     "platform-provider-service",
+    "platform-provider-orchestration-service",
     "platform-egress-service",
     "platform-profile-service",
     "platform-support-service",
     "platform-cli-runtime-service",
     "platform-agent-runtime-service",
     "platform-chat-service",
+    "platform-egress-forwarder",
     "console-api",
     "console-web",
     "showcase-api",
@@ -163,10 +171,24 @@ target "platform-provider-service" {
   tags     = ["${IMAGE_REGISTRY}code-code/platform-provider-service:${IMAGE_TAG}"]
 }
 
+target "platform-provider-orchestration-service" {
+  inherits = ["_go_platform_service"]
+  args     = { SERVICE_NAME = "platform-provider-orchestration-service" }
+  tags     = ["${IMAGE_REGISTRY}code-code/platform-provider-orchestration-service:${IMAGE_TAG}"]
+}
+
 target "platform-egress-service" {
   inherits = ["_go_platform_service"]
   args     = { SERVICE_NAME = "platform-egress-service" }
   tags     = ["${IMAGE_REGISTRY}code-code/platform-egress-service:${IMAGE_TAG}"]
+}
+
+target "platform-egress-forwarder" {
+  inherits   = ["_proxyable", "_multiarch"]
+  context    = "."
+  dockerfile = "deploy/images/release/gost-forwarder.Dockerfile"
+  args       = { GOST_IMAGE = "${GOST_IMAGE}" }
+  tags       = ["${IMAGE_REGISTRY}code-code/platform-egress-forwarder:${IMAGE_TAG}"]
 }
 
 target "platform-profile-service" {

@@ -1,28 +1,52 @@
 {{- if .Values.authorizationPolicies.enabled }}
-{{- $platformSources := list .Release.Namespace .Values.global.consoleNamespace .Values.global.showcaseNamespace .Values.global.networkNamespace .Values.global.runNamespace .Values.global.observabilityNamespace | uniq }}
-{{- $edgeSources := list .Values.global.networkNamespace .Values.global.observabilityNamespace | uniq }}
-{{- $consoleSources := append $edgeSources .Values.global.consoleNamespace | uniq }}
-{{- $showcaseSources := append $edgeSources .Values.global.showcaseNamespace | uniq }}
+{{- /*
+  Per-service source namespace definitions.
+  Each service only accepts traffic from namespaces that actually call it.
+  observability is universally included for Prometheus metrics scraping.
+*/ -}}
+{{- $self := .Release.Namespace -}}
+{{- $console := .Values.global.consoleNamespace -}}
+{{- $showcase := .Values.global.showcaseNamespace -}}
+{{- $net := .Values.global.networkNamespace -}}
+{{- $runs := .Values.global.runNamespace -}}
+{{- $obs := .Values.global.observabilityNamespace -}}
+{{- $perServicePolicies := list
+  (dict "service" .Values.components.auth.name                    "sources" (list $self $console $net $obs))
+  (dict "service" .Values.components.model.name                   "sources" (list $self $console $showcase $obs))
+  (dict "service" .Values.components.provider.name                "sources" (list $self $console $showcase $obs))
+  (dict "service" .Values.components.providerOrchestration.name   "sources" (list $self $obs))
+  (dict "service" .Values.components.profile.name                 "sources" (list $self $console $obs))
+  (dict "service" .Values.components.support.name                 "sources" (list $self $console $showcase $obs))
+  (dict "service" .Values.components.cliRuntime.name              "sources" (list $self $obs))
+  (dict "service" .Values.components.agentRuntime.name            "sources" (list $self $console $runs $obs))
+  (dict "service" .Values.components.chat.name                    "sources" (list $self $console $obs))
+-}}
+{{- range $i, $policy := $perServicePolicies }}
+{{- if $i }}
+---
+{{- end }}
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: platform-core-workloads
-  namespace: {{ .Release.Namespace }}
+  name: {{ $policy.service }}
+  namespace: {{ $.Release.Namespace }}
   labels:
-{{ include "platform.labels" (dict "root" . "name" "platform-core-workloads" "componentLabel" "authz") | nindent 4 }}
+{{ include "platform.labels" (dict "root" $ "name" $policy.service "componentLabel" "authz") | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/name: {{ $policy.service }}
   action: ALLOW
   rules:
     - from:
         - source:
             namespaces:
-{{- range $namespace := $platformSources }}
-              - {{ $namespace | quote }}
+{{- range $ns := $policy.sources }}
+              - {{ $ns | quote }}
+{{- end }}
 {{- end }}
 ---
+{{- $platformSources := list .Release.Namespace .Values.global.consoleNamespace .Values.global.showcaseNamespace .Values.global.networkNamespace .Values.global.runNamespace .Values.global.observabilityNamespace | uniq }}
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
@@ -44,6 +68,9 @@ spec:
               - {{ $namespace | quote }}
 {{- end }}
 ---
+{{- $edgeSources := list .Values.global.networkNamespace .Values.global.observabilityNamespace | uniq }}
+{{- $consoleSources := append $edgeSources .Values.global.consoleNamespace | uniq }}
+{{- $showcaseSources := append $edgeSources .Values.global.showcaseNamespace | uniq }}
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
@@ -84,3 +111,4 @@ spec:
               - {{ $namespace | quote }}
 {{- end }}
 {{- end }}
+

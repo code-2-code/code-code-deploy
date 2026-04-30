@@ -45,6 +45,18 @@ prometheus:
   image: prom/prometheus:v3.11.2
   # -- PVC size for Prometheus data storage.
   storageSize: 10Gi
+  # -- Prometheus TSDB retention time. Keep dev observability bounded.
+  retentionTime: 2d
+  # -- Resource budget for Prometheus.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+      ephemeral-storage: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+      ephemeral-storage: 2Gi
 
 blackbox:
   # -- Enable or disable the Blackbox Exporter.

@@ -6,6 +6,8 @@ datasources:
     access: proxy
     url: http://prometheus.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:9090
     isDefault: true
+    jsonData:
+      timeInterval: 15s
 {{- if .Values.loki.enabled }}
   - name: Loki
     uid: loki
@@ -38,13 +40,15 @@ datasources:
         spanEndTimeShift: "5m"
         tags:
           - key: service.name
-            value: service
+            value: service_name
       {{- if .Values.loki.enabled }}
       tracesToLogsV2:
         datasourceUid: loki
         spanStartTimeShift: "-5m"
         spanEndTimeShift: "5m"
         tags:
+          - key: service.name
+            value: service_name
           - key: k8s.namespace.name
             value: namespace
           - key: k8s.pod.name

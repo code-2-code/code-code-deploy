@@ -32,7 +32,9 @@
         "trustBundleConfigMapName": { "type": "string", "minLength": 1 },
         "consoleBaseUrl": { "type": "string", "minLength": 1 },
         "showcaseBaseUrl": { "type": "string", "minLength": 1 },
-        "cliOutputSidecarImageName": { "type": "string", "minLength": 1 }
+        "cliOutputSidecarImageName": { "type": "string", "minLength": 1 },
+        "egressForwarderImageName": { "type": "string", "minLength": 1 },
+        "egressForwarderImageTag": { "type": "string" }
       },
       "required": [
         "partOf",
@@ -60,7 +62,9 @@
         "trustBundleConfigMapName",
         "consoleBaseUrl",
         "showcaseBaseUrl",
-        "cliOutputSidecarImageName"
+        "cliOutputSidecarImageName",
+        "egressForwarderImageName",
+        "egressForwarderImageTag"
       ]
     },
     "defaults": {
@@ -199,6 +203,7 @@
         "auth": { "$ref": "#/$defs/component" },
         "model": { "$ref": "#/$defs/component" },
         "provider": { "$ref": "#/$defs/component" },
+        "providerOrchestration": { "$ref": "#/$defs/component" },
         "egress": { "$ref": "#/$defs/component" },
         "profile": { "$ref": "#/$defs/component" },
         "support": { "$ref": "#/$defs/component" },
@@ -214,6 +219,7 @@
         "auth",
         "model",
         "provider",
+        "providerOrchestration",
         "egress",
         "profile",
         "support",

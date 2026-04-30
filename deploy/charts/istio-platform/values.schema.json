@@ -111,12 +111,16 @@
               "type": "array",
               "items": { "type": "integer", "minimum": 1, "maximum": 65535 }
             },
+            "forwarderPorts": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 1, "maximum": 65535 }
+            },
             "proxyPorts": {
               "type": "array",
               "items": { "type": "integer", "minimum": 1, "maximum": 65535 }
             }
           },
-          "required": ["enabled", "kubernetesApiCidrs", "externalPorts", "proxyPorts"]
+          "required": ["enabled", "kubernetesApiCidrs", "externalPorts", "forwarderPorts", "proxyPorts"]
         }
       },
       "required": [

@@ -48,6 +48,11 @@ spec:
       {{- end }}
       internal_url: {{ printf "http://grafana.%s.svc.cluster.local:3000%s" .Values.global.observabilityNamespace (trimSuffix "/" .Values.grafana.rootUrl) | quote }}
       health_check_url: {{ printf "http://grafana.%s.svc.cluster.local:3000%s/api/health" .Values.global.observabilityNamespace (trimSuffix "/" .Values.grafana.rootUrl) | quote }}
+      datasource_uid: prometheus
+      dashboards:
+        - name: "Code Code / Istio Mesh"
+          variables:
+            namespace: "var-namespace"
       {{- end }}
     prometheus:
       url: http://prometheus.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:9090

@@ -70,12 +70,23 @@
         "service": { "$ref": "#/$defs/nodePortService" },
         "publicUrl": { "type": "string" },
         "rootUrl": { "type": "string", "minLength": 1 },
-        "anonymousOrgRole": { "type": "string", "enum": ["Viewer", "Editor", "Admin"] },
-        "viewersCanEdit": { "type": "boolean" },
         "exploreEnabled": { "type": "boolean" },
+        "featureToggles": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
+        },
         "route": { "$ref": "#/$defs/httpRoute" }
       },
-      "required": ["enabled", "image", "service", "publicUrl", "rootUrl", "anonymousOrgRole", "viewersCanEdit", "exploreEnabled", "route"]
+      "required": [
+        "enabled",
+        "image",
+        "service",
+        "publicUrl",
+        "rootUrl",
+        "exploreEnabled",
+        "featureToggles",
+        "route"
+      ]
     },
     "cloudflareDdns": {
       "type": "object",

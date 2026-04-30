@@ -56,6 +56,19 @@ app.kubernetes.io/version: {{ .root.Chart.AppVersion | quote }}
       port: 15008
     - protocol: TCP
       port: 4317
+{{- if .Values.components.networkNamespaceEgress.forwarderPorts }}
+- to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/component: egress-forwarder
+          app.kubernetes.io/managed-by: platform-egress-service
+          egress.platform.code-code.internal/role: egress-forwarder
+  ports:
+{{- range .Values.components.networkNamespaceEgress.forwarderPorts }}
+    - protocol: TCP
+      port: {{ . }}
+{{- end }}
+{{- end }}
 {{- if .Values.components.networkNamespaceEgress.externalPorts }}
 - ports:
 {{- range .Values.components.networkNamespaceEgress.externalPorts }}

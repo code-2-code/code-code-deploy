@@ -41,6 +41,8 @@ spec:
 {{ include "infrastructure.selectorLabels" (dict "root" . "name" "loki") | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/loki-config: {{ tpl (.Files.Get "files/loki/loki.yaml") . | sha256sum }}
       labels:
 {{ include "infrastructure.labels" (dict "root" . "name" "loki" "componentLabel" "logging") | nindent 8 }}
 {{ include "infrastructure.observabilityAmbientPodLabels" (dict "root" .) | nindent 8 }}

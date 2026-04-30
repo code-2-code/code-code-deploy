@@ -1,6 +1,12 @@
 # Patterns to ignore when packaging the chart with `helm package`.
 
 .DS_Store
+._*
+*/._*
+*/*/._*
+*/*/*/._*
+*/*/*/*/._*
+__MACOSX/
 .git/
 .gitignore
 .bzr/

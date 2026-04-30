@@ -62,9 +62,8 @@ make -C deploy docs
 | grafana.service.nodePort | int | `32030` | NodePort exposed only when grafana.service.type is NodePort. |
 | grafana.publicUrl | string | `""` | Public Grafana URL used by Kiali external links. |
 | grafana.rootUrl | string | `"/"` | Root URL passed to Grafana for subpath deployments. |
-| grafana.anonymousOrgRole | string | `"Viewer"` | Anonymous org role for local or shared dashboards. |
-| grafana.viewersCanEdit | bool | `false` | Allow viewers to edit panels in local debugging setups. |
 | grafana.exploreEnabled | bool | `true` | Toggle the Grafana Explore UI. |
+| grafana.featureToggles | list | `["kubernetesLogsDrilldown"]` | Grafana feature toggles enabled through individual GF_FEATURE_TOGGLES_<name> env vars. |
 | grafana.route.enabled | bool | `false` | Publish Grafana through a Gateway API HTTPRoute. |
 | grafana.route.host | string | `"grafana.placeholder.invalid"` | External host served by the Grafana HTTPRoute. |
 | grafana.route.extraHosts | list | `[]` | Additional hosts served by the Grafana HTTPRoute. |

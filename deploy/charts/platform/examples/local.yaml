@@ -8,6 +8,8 @@ global:
   tracesEnabled: true
 
 cliImageBuildConfig:
+  imageRegistryLookupPrefix: "code-code-registry.code-code-infra.svc.cluster.local:5000"
+  imageRegistryLookupInsecure: "true"
   sourceContext: https://github.com/pood1e/code-code.git
 
 consoleRoute:

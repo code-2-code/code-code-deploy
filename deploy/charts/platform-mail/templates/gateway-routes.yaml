@@ -1,0 +1,103 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "platform-mail.fullname" . }}-webmail
+  labels:
+    app.kubernetes.io/name: snappymail
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  parentRefs:
+    - name: {{ .Values.ingress.gatewayName }}
+      namespace: {{ .Values.global.ingressNamespace }}
+  hostnames:
+    - {{ .Values.ingress.webmailHost }}
+  rules:
+    - backendRefs:
+        - name: {{ include "platform-mail.fullname" . }}-snappymail
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "platform-mail.fullname" . }}-admin
+  labels:
+    app.kubernetes.io/name: stalwart
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  parentRefs:
+    - name: {{ .Values.ingress.gatewayName }}
+      namespace: {{ .Values.global.ingressNamespace }}
+  hostnames:
+    - {{ .Values.ingress.adminHost }}
+  rules:
+    - backendRefs:
+        - name: {{ include "platform-mail.fullname" . }}-stalwart
+          port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: {{ include "platform-mail.fullname" . }}-smtp
+  labels:
+    app.kubernetes.io/name: stalwart
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  parentRefs:
+    - name: {{ .Values.ingress.gatewayName }}
+      namespace: {{ .Values.global.ingressNamespace }}
+      sectionName: smtp
+  rules:
+    - backendRefs:
+        - name: {{ include "platform-mail.fullname" . }}-stalwart
+          port: 25
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: {{ include "platform-mail.fullname" . }}-smtps
+  labels:
+    app.kubernetes.io/name: stalwart
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  parentRefs:
+    - name: {{ .Values.ingress.gatewayName }}
+      namespace: {{ .Values.global.ingressNamespace }}
+      sectionName: smtps
+  rules:
+    - backendRefs:
+        - name: {{ include "platform-mail.fullname" . }}-stalwart
+          port: 465
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: {{ include "platform-mail.fullname" . }}-submission
+  labels:
+    app.kubernetes.io/name: stalwart
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  parentRefs:
+    - name: {{ .Values.ingress.gatewayName }}
+      namespace: {{ .Values.global.ingressNamespace }}
+      sectionName: submission
+  rules:
+    - backendRefs:
+        - name: {{ include "platform-mail.fullname" . }}-stalwart
+          port: 587
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: {{ include "platform-mail.fullname" . }}-imaps
+  labels:
+    app.kubernetes.io/name: stalwart
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  parentRefs:
+    - name: {{ .Values.ingress.gatewayName }}
+      namespace: {{ .Values.global.ingressNamespace }}
+      sectionName: imaps
+  rules:
+    - backendRefs:
+        - name: {{ include "platform-mail.fullname" . }}-stalwart
+          port: 993

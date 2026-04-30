@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform-mail.fullname" . }}-snappymail
+  labels:
+    app.kubernetes.io/name: snappymail
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.snappymail.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: snappymail
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: snappymail
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: snappymail
+          image: "{{ .Values.snappymail.image.repository }}:{{ .Values.snappymail.image.tag }}"
+          imagePullPolicy: {{ .Values.snappymail.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP

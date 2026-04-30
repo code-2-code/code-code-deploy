@@ -9,6 +9,4 @@ data:
   IMAGE_REGISTRY_PREFIX: {{ default .Values.global.imageRegistry .Values.cliImageBuildConfig.imageRegistryPrefix | quote }}
   IMAGE_REGISTRY_LOOKUP_PREFIX: {{ .Values.cliImageBuildConfig.imageRegistryLookupPrefix | quote }}
   IMAGE_REGISTRY_LOOKUP_INSECURE: {{ .Values.cliImageBuildConfig.imageRegistryLookupInsecure | quote }}
-  SOURCE_CONTEXT: {{ .Values.cliImageBuildConfig.sourceContext | quote }}
-  SOURCE_REVISION: {{ .Values.cliImageBuildConfig.sourceRevision | quote }}
 {{- end }}

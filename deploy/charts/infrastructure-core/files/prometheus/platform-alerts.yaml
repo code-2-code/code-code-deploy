@@ -18,7 +18,6 @@ groups:
         annotations:
           summary: "Provider OAuth observability failures are elevated"
           description: "More than 20% of CLI OAuth active observability operations failed or were auth-blocked in the last 30 minutes."
-          runbook_url: "docs/platform/provider-observability-workflow.md"
       - alert: VendorObservabilityFailureRateHigh
         expr: |
           (
@@ -36,4 +35,3 @@ groups:
         annotations:
           summary: "Vendor observability failures are elevated"
           description: "More than 20% of vendor API-key active observability operations failed or were auth-blocked in the last 30 minutes."
-          runbook_url: "docs/platform/provider-observability-workflow.md"

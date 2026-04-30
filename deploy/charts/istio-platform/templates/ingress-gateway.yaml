@@ -19,6 +19,28 @@ data:
           port: {{ $gateway.httpPort }}
           targetPort: {{ $gateway.httpPort }}
           nodePort: {{ $httpNodePort }}
+      {{- else }}
+      ports:
+        - name: http
+          protocol: TCP
+          port: {{ $gateway.httpPort }}
+          targetPort: {{ $gateway.httpPort }}
+        - name: smtp
+          protocol: TCP
+          port: 25
+          targetPort: 25
+        - name: smtps
+          protocol: TCP
+          port: 465
+          targetPort: 465
+        - name: submission
+          protocol: TCP
+          port: 587
+          targetPort: 587
+        - name: imaps
+          protocol: TCP
+          port: 993
+          targetPort: 993
       {{- end }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -39,6 +61,38 @@ spec:
     - name: http
       port: {{ $gateway.httpPort }}
       protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+{{ toYaml $gateway.allowedRouteNamespaceSelector | nindent 12 }}
+    - name: smtp
+      port: 25
+      protocol: TCP
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+{{ toYaml $gateway.allowedRouteNamespaceSelector | nindent 12 }}
+    - name: smtps
+      port: 465
+      protocol: TCP
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+{{ toYaml $gateway.allowedRouteNamespaceSelector | nindent 12 }}
+    - name: submission
+      port: 587
+      protocol: TCP
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+{{ toYaml $gateway.allowedRouteNamespaceSelector | nindent 12 }}
+    - name: imaps
+      port: 993
+      protocol: TCP
       allowedRoutes:
         namespaces:
           from: Selector

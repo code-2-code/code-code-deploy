@@ -102,8 +102,6 @@ make -C deploy docs
 | components.auth.enabled | bool | `true` | Toggle deployment of the auth service. |
 | components.auth.credentialEncryptionKey | bool | `true` | Mount credential material encryption key environment variables into auth service. |
 | components.model.enabled | bool | `true` | Toggle deployment of the model service. |
-| components.model.cronJob.enabled | bool | `true` | cronJob.enabled toggles the model sync CronJob. |
-| components.model.cronJob.schedule | string | `"0 * * * *"` | cronJob.schedule is the cron expression controlling sync frequency. |
 | components.provider.enabled | bool | `true` | Toggle deployment of the provider service. |
 | components.egress.enabled | bool | `true` | Toggle deployment of the egress service. |
 | components.profile.enabled | bool | `true` | Toggle deployment of the profile service. |

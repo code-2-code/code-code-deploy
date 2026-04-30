@@ -50,6 +50,8 @@ spec:
           {{- if and $component.env (hasKey $component.env "OTEL_EXPORTER_OTLP_ENDPOINT") }}
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
               value: {{ default "grpc" $.Values.global.otlpProtocol | quote }}
+            - name: OTEL_EXPORTER_OTLP_INSECURE
+              value: "true"
             - name: OTEL_EXPORTER_OTLP_TRACES_PROTOCOL
               value: {{ default "grpc" $.Values.global.otlpProtocol | quote }}
             - name: OTEL_EXPORTER_OTLP_METRICS_PROTOCOL

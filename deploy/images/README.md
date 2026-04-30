@@ -11,7 +11,7 @@ Owns container image build definitions for platform services, agent runtimes, an
 
 ## Build groups
 
-`docker-bake.hcl` defines four groups (see `docs/deploy/README.md` for usage):
+`docker-bake.hcl` defines four groups; use `deploy/Makefile` for build and deploy commands:
 
 - `default` — every image installed by `charts/platform` plus agent runtimes and sidecars.
 - `platform` — platform backend and frontend service images.
@@ -55,4 +55,4 @@ make -C deploy bake-check-remote                # run Buildx checks on REMOTE_DO
 
 `bake-check-remote` sends only the Dockerfile/Bake check context, not the full repository. Override `REMOTE_DOCKER_HOST` and `REMOTE_BAKE_PLATFORM` when using a different builder host or platform.
 
-For end-to-end deploy flow see `docs/deploy/README.md`.
+For the end-to-end deploy flow, use the root `README.md` and `deploy/Makefile`.

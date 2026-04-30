@@ -52,6 +52,10 @@ global:
   showcaseBaseUrl: http://showcase.placeholder.invalid
   # -- global.cliOutputSidecarImageName is the image name used by agent-runtime for the CLI sidecar.
   cliOutputSidecarImageName: cli-output-sidecar
+  # -- global.egressForwarderImageName is the image name used by generated GOST egress forwarder Deployments.
+  egressForwarderImageName: platform-egress-forwarder
+  # -- global.egressForwarderImageTag overrides the image tag used by generated GOST egress forwarder Deployments.
+  egressForwarderImageTag: ""
 
 # defaults is the shared deployment baseline for platform workloads.
 defaults:
@@ -239,6 +243,13 @@ components:
             - update
             - patch
             - delete
+        - apiGroups:
+            - ""
+          resources:
+            - pods
+          verbs:
+            - get
+            - list
 
   # components.model controls the model gRPC/HTTP service.
   model:
@@ -271,6 +282,10 @@ components:
           fieldRef:
             apiVersion: v1
             fieldPath: metadata.namespace
+      TEMPORAL_ADDRESS:
+        valueTpl: '{{ .Values.global.temporalAddress }}'
+      TEMPORAL_NAMESPACE:
+        valueTpl: '{{ .Values.global.temporalNamespace }}'
       USER:
         value: nonroot
     egressTrustBundle: true
@@ -290,13 +305,6 @@ components:
             - update
             - patch
             - delete
-    # cronJob controls the periodic model definition sync CronJob.
-    cronJob:
-      # -- cronJob.enabled toggles the model sync CronJob.
-      enabled: true
-      # -- cronJob.schedule is the cron expression controlling sync frequency.
-      schedule: "0 * * * *"
-
   # components.provider controls the provider gRPC/HTTP service.
   provider:
     # -- Toggle deployment of the provider service.
@@ -316,14 +324,10 @@ components:
         valueTpl: '{{ .Values.global.otlpGrpcEndpoint }}'
       OTEL_SERVICE_NAME:
         value: platform-provider-service
-      PLATFORM_PROVIDER_SERVICE_AUTH_GRPC_ADDR:
-        value: platform-auth-service:8081
       PLATFORM_PROVIDER_SERVICE_GRPC_ADDR:
         value: :8081
       PLATFORM_PROVIDER_SERVICE_HTTP_ADDR:
         value: :8080
-      PLATFORM_PROVIDER_SERVICE_MODEL_GRPC_ADDR:
-        value: platform-model-service:8081
       PLATFORM_PROVIDER_SERVICE_HOST_TELEMETRY_MAX_TARGETS:
         value: "200"
       PLATFORM_PROVIDER_SERVICE_NAMESPACE:
@@ -363,6 +367,73 @@ components:
             - get
             - update
             - patch
+        - apiGroups:
+            - coordination.k8s.io
+          resources:
+            - leases
+          verbs:
+            - get
+            - create
+            - update
+            - patch
+            - delete
+
+  # components.providerOrchestration controls durable provider onboarding flows.
+  providerOrchestration:
+    # -- Toggle deployment of the provider orchestration service.
+    enabled: true
+    name: platform-provider-orchestration-service
+    componentLabel: provider-orchestration
+    imageName: platform-provider-orchestration-service
+    serviceAccount:
+      create: true
+    portPreset: grpc-http
+    databaseUrl: true
+    internalActionToken: true
+    service:
+      enabled: true
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT:
+        valueTpl: '{{ .Values.global.otlpGrpcEndpoint }}'
+      OTEL_SERVICE_NAME:
+        value: platform-provider-orchestration-service
+      PLATFORM_PROVIDER_ORCHESTRATION_SERVICE_AUTH_GRPC_ADDR:
+        value: platform-auth-service:8081
+      PLATFORM_PROVIDER_ORCHESTRATION_SERVICE_GRPC_ADDR:
+        value: :8081
+      PLATFORM_PROVIDER_ORCHESTRATION_SERVICE_HTTP_ADDR:
+        value: :8080
+      PLATFORM_PROVIDER_ORCHESTRATION_SERVICE_NAMESPACE:
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: metadata.namespace
+      PLATFORM_PROVIDER_ORCHESTRATION_SERVICE_PROVIDER_GRPC_ADDR:
+        value: platform-provider-service:8081
+      PLATFORM_PROVIDER_ORCHESTRATION_SERVICE_PROVIDER_HTTP_BASE_URL:
+        valueTpl: 'http://platform-provider-service.{{ .Release.Namespace }}.svc.cluster.local:8080/internal/actions'
+      TEMPORAL_ADDRESS:
+        valueTpl: '{{ .Values.global.temporalAddress }}'
+      TEMPORAL_NAMESPACE:
+        valueTpl: '{{ .Values.global.temporalNamespace }}'
+      USER:
+        value: nonroot
+    egressTrustBundle: true
+    probePreset: grpc-8081-http-readyz
+    rbac:
+      enabled: true
+      clusterWide: false
+      name: platform-provider-orchestration-service
+      rules:
+        - apiGroups:
+            - ""
+          resources:
+            - configmaps
+          verbs:
+            - get
+            - create
+            - update
+            - patch
 
   # components.egress controls the egress policy and runtime telemetry gRPC service.
   egress:
@@ -392,6 +463,8 @@ components:
         valueTpl: '{{ .Values.global.networkNamespace }}'
       PLATFORM_EGRESS_SERVICE_ENABLE_LLM_HEADER_LOGS:
         valueTpl: '{{ ternary "true" "false" (default false .Values.components.egress.llmHeaderLogs.enabled) }}'
+      PLATFORM_EGRESS_SERVICE_FORWARDER_IMAGE:
+        valueTpl: '{{ include "platform.image" (dict "root" . "imageName" .Values.global.egressForwarderImageName "imageTag" .Values.global.egressForwarderImageTag) }}'
       PLATFORM_EGRESS_SERVICE_GRPC_ADDR:
         value: :8081
       PLATFORM_EGRESS_SERVICE_ISTIO_NAMESPACE:
@@ -430,6 +503,7 @@ components:
           resources:
             - configmaps
             - services
+            - serviceaccounts
           verbs:
             - get
             - list
@@ -441,6 +515,17 @@ components:
             - apps
           resources:
             - deployments
+          verbs:
+            - get
+            - list
+            - create
+            - update
+            - patch
+            - delete
+        - apiGroups:
+            - networking.k8s.io
+          resources:
+            - networkpolicies
           verbs:
             - get
             - list
@@ -568,16 +653,6 @@ components:
         value: :8081
       PLATFORM_SUPPORT_SERVICE_HTTP_ADDR:
         value: :8080
-      PLATFORM_SUPPORT_SERVICE_IMAGE_BUILD_SOURCE_CONTEXT:
-        valueFrom:
-          configMapKeyRef:
-            key: SOURCE_CONTEXT
-            name: cli-runtime-image-build-config
-      PLATFORM_SUPPORT_SERVICE_IMAGE_BUILD_SOURCE_REVISION:
-        valueFrom:
-          configMapKeyRef:
-            key: SOURCE_REVISION
-            name: cli-runtime-image-build-config
       PLATFORM_SUPPORT_SERVICE_IMAGE_REGISTRY:
         valueFrom:
           configMapKeyRef:
@@ -664,16 +739,6 @@ components:
         value: :8081
       PLATFORM_CLI_RUNTIME_SERVICE_HTTP_ADDR:
         value: :8080
-      PLATFORM_CLI_RUNTIME_SERVICE_IMAGE_BUILD_SOURCE_CONTEXT:
-        valueFrom:
-          configMapKeyRef:
-            key: SOURCE_CONTEXT
-            name: cli-runtime-image-build-config
-      PLATFORM_CLI_RUNTIME_SERVICE_IMAGE_BUILD_SOURCE_REVISION:
-        valueFrom:
-          configMapKeyRef:
-            key: SOURCE_REVISION
-            name: cli-runtime-image-build-config
       PLATFORM_CLI_RUNTIME_SERVICE_IMAGE_REGISTRY:
         valueFrom:
           configMapKeyRef:
@@ -1011,6 +1076,8 @@ components:
         valueTpl: 'http://platform-provider-service.{{ .Release.Namespace }}.svc.cluster.local:8080'
       CONSOLE_API_PROVIDER_GRPC_ADDR:
         valueTpl: 'platform-provider-service.{{ .Release.Namespace }}.svc.cluster.local:8081'
+      CONSOLE_API_PROVIDER_ORCHESTRATION_GRPC_ADDR:
+        valueTpl: 'platform-provider-orchestration-service.{{ .Release.Namespace }}.svc.cluster.local:8081'
       CONSOLE_API_SUPPORT_GRPC_ADDR:
         valueTpl: 'platform-support-service.{{ .Release.Namespace }}.svc.cluster.local:8081'
       OTEL_EXPORTER_OTLP_ENDPOINT:

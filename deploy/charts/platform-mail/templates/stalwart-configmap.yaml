@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "platform-mail.fullname" . }}-stalwart
+  labels:
+    app.kubernetes.io/name: stalwart
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  config.toml: |-
+    [server]
+    hostname = "{{ .Values.global.domain }}"
+    
+    [store.db]
+    type = "postgres"
+    url = "postgres://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ .Release.Name }}-postgresql:5432/{{ .Values.postgresql.auth.database }}"
+    
+    [store.blob]
+    type = "s3"
+    url = "http://{{ .Release.Name }}-minio:9000"
+    bucket = "stalwart-blobs"
+    access-key = "{{ .Values.minio.auth.rootUser }}"
+    secret-key = "{{ .Values.minio.auth.rootPassword }}"
+    region = "us-east-1"
+    path-style = true
+    
+    [directory."default"]
+    type = "sql"
+    store = "db"
+    
+    [storage."default"]
+    store = "db"
+    blob = "blob"
+
+    [server.listener."smtp"]
+    bind = ["[::]:25"]
+    protocol = "smtp"
+    
+    [server.listener."submission"]
+    bind = ["[::]:587"]
+    protocol = "smtp"
+    
+    [server.listener."imaps"]
+    bind = ["[::]:993"]
+    protocol = "imap"
+    tls.enable = true
+    
+    [server.listener."management"]
+    bind = ["[::]:8080"]
+    protocol = "http"

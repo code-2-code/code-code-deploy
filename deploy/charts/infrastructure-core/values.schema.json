@@ -46,7 +46,18 @@
       },
       "required": ["enabled", "image", "tempoEnabled", "tempoEndpoint"]
     },
-    "prometheus": { "$ref": "#/$defs/statefulAddon" },
+    "prometheus": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": { "type": "string", "minLength": 1 },
+        "storageSize": { "type": "string", "minLength": 1 },
+        "retentionTime": { "type": "string", "minLength": 1 },
+        "resources": { "type": "object" }
+      },
+      "required": ["enabled", "image", "storageSize", "retentionTime", "resources"]
+    },
     "blackbox": {
       "type": "object",
       "additionalProperties": false,

@@ -37,6 +37,16 @@ spec:
       ports:
         - protocol: TCP
           port: 4317
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.global.observabilityNamespace }}
+          podSelector:
+            matchLabels:
+              gateway.networking.k8s.io/gateway-name: waypoint
+      ports:
+        - protocol: TCP
+          port: 15008
 {{- range .Values.components.ingressGateway.backendEgress }}
     - to:
         - namespaceSelector:
@@ -97,6 +107,16 @@ spec:
           port: 4317
         - protocol: TCP
           port: 4318
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.global.observabilityNamespace }}
+          podSelector:
+            matchLabels:
+              gateway.networking.k8s.io/gateway-name: waypoint
+      ports:
+        - protocol: TCP
+          port: 15008
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

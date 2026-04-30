@@ -17,7 +17,7 @@ image="${PLATFORM_EGRESS_SMOKE_IMAGE:-busybox:1.36}"
 proxy_host="${PLATFORM_EGRESS_SMOKE_PROXY_HOST:-}"
 proxy_port="${PLATFORM_EGRESS_SMOKE_PROXY_PORT:-10809}"
 proxy_access_set_id="${PLATFORM_EGRESS_SMOKE_PROXY_ACCESS_SET_ID:-support.proxy-preset.preset-proxy}"
-proxy_source_service_account="${PLATFORM_EGRESS_SMOKE_PROXY_SOURCE_SERVICE_ACCOUNT:-${workload_namespace}/${l4_service_account}}"
+proxy_forwarder_service_account="${PLATFORM_EGRESS_SMOKE_PROXY_FORWARDER_SERVICE_ACCOUNT:-${network_namespace}/platform-egress-forwarder}"
 l4_tcp_timeout="${PLATFORM_EGRESS_SMOKE_L4_TCP_TIMEOUT:-20}"
 l4_tcp_attempts="${PLATFORM_EGRESS_SMOKE_L4_TCP_ATTEMPTS:-3}"
 access_set_id="${PLATFORM_EGRESS_SMOKE_ACCESS_SET_ID:-support.external-rule-set.l7-smoke}"
@@ -243,22 +243,55 @@ require_preset_proxy_pairing() {
 
   local matching_authz_count
   matching_authz_count="$("${kubectl_bin}" -n "${network_namespace}" get authorizationpolicy -o json | "${jq_bin}" -r \
-    --arg access_set_id "${proxy_access_set_id}" \
     --arg service_entry "${service_entry}" \
-    --arg source_service_account "${proxy_source_service_account}" \
+    --arg source_service_account "${proxy_forwarder_service_account}" \
     '[.items[]
-      | select(((.metadata.annotations["egress.platform.code-code.internal/access-set-id"] // "") | split(",") | index($access_set_id)) != null)
       | select([.spec.targetRefs[]? | select(.group == "networking.istio.io" and .kind == "ServiceEntry" and .name == $service_entry)] | length > 0)
       | select([.spec.rules[]?.from[]?.source.serviceAccounts[]? | select(. == $source_service_account)] | length > 0)
     ] | length')"
   if [[ "${matching_authz_count}" == "0" ]]; then
     "${kubectl_bin}" -n "${network_namespace}" get authorizationpolicy -o yaml >&2 || true
-    echo "[egress-data-plane-smoke] no AuthorizationPolicy pairs ${proxy_access_set_id} with ServiceEntry/${service_entry} for ${proxy_source_service_account}" >&2
+    echo "[egress-data-plane-smoke] no AuthorizationPolicy pairs ServiceEntry/${service_entry} with ${proxy_forwarder_service_account}" >&2
     exit 1
   fi
 
-  printf '%s\n' "${connect_host}"
-  echo "[egress-data-plane-smoke] preset proxy ${proxy_access_set_id} pairs ServiceEntry/${service_entry} with ${proxy_source_service_account}" >&2
+  local proxy_label
+  proxy_label="$(printf '%s' "${service_entry_json}" | "${jq_bin}" -r '.metadata.labels["egress.platform.code-code.internal/proxy-endpoint"] // ""')"
+  if [[ -z "${proxy_label}" ]]; then
+    printf '%s\n' "${service_entry_json}" | "${jq_bin}" . >&2
+    echo "[egress-data-plane-smoke] ServiceEntry/${service_entry} has no proxy endpoint label" >&2
+    exit 1
+  fi
+
+  local tls_route_count
+  tls_route_count="$("${kubectl_bin}" -n "${network_namespace}" get tlsroute \
+    -l "egress.platform.code-code.internal/proxy-endpoint=${proxy_label},egress.platform.code-code.internal/role=direct-tls-route" \
+    -o json | "${jq_bin}" -r '[.items[]
+      | select((.spec.hostnames // []) | length > 0)
+      | select((.spec.hostnames // []) | length <= 16)
+      | select([.spec.rules[]?.backendRefs[]? | select(.name | startswith("code-code-egress-forwarder-"))] | length > 0)
+    ] | length')"
+  if [[ "${tls_route_count}" == "0" ]]; then
+    "${kubectl_bin}" -n "${network_namespace}" get tlsroute \
+      -l "egress.platform.code-code.internal/proxy-endpoint=${proxy_label},egress.platform.code-code.internal/role=direct-tls-route" \
+      -o yaml >&2 || true
+    echo "[egress-data-plane-smoke] no valid proxy TLSRoute found for ${proxy_access_set_id}" >&2
+    exit 1
+  fi
+
+  local ready_forwarder_count
+  ready_forwarder_count="$("${kubectl_bin}" -n "${network_namespace}" get deploy \
+    -l "egress.platform.code-code.internal/proxy-endpoint=${proxy_label},egress.platform.code-code.internal/role=egress-forwarder" \
+    -o json | "${jq_bin}" -r '[.items[] | select((.status.readyReplicas // 0) >= 1)] | length')"
+  if [[ "${ready_forwarder_count}" == "0" ]]; then
+    "${kubectl_bin}" -n "${network_namespace}" get deploy \
+      -l "egress.platform.code-code.internal/proxy-endpoint=${proxy_label},egress.platform.code-code.internal/role=egress-forwarder" \
+      -o wide >&2 || true
+    echo "[egress-data-plane-smoke] proxy forwarder is not ready for ${proxy_access_set_id}" >&2
+    exit 1
+  fi
+
+  echo "[egress-data-plane-smoke] preset proxy ${proxy_access_set_id} is routed through ${tls_route_count} TLSRoute resource(s) and ${ready_forwarder_count} ready forwarder deployment(s)" >&2
 }
 
 run_smoke_pod() {
@@ -342,10 +375,10 @@ if requires_l7_access_set; then
   PLATFORM_EGRESS_SMOKE_MODE=apply "${repo_root}/deploy/scripts/egress-access-set-smoke.sh"
 
   mapfile -t gateways < <(resource_names_for_access_set gateway)
-  mapfile -t http_routes < <(resource_names_for_access_set httproute)
+  mapfile -t http_route_resources < <(resource_names_for_access_set httproute)
   mapfile -t destination_rules < <(resource_names_for_access_set destinationrule)
 
-  if [[ "${#gateways[@]}" -lt 1 || "${#http_routes[@]}" -lt 2 || "${#destination_rules[@]}" -lt 2 ]]; then
+  if [[ "${#gateways[@]}" -lt 1 || "${#http_route_resources[@]}" -lt 2 || "${#destination_rules[@]}" -lt 2 ]]; then
     "${kubectl_bin}" -n "${network_namespace}" get gateway,httproute,destinationrule,serviceentry,authorizationpolicy
     echo "[egress-data-plane-smoke] generated L7 resources are incomplete" >&2
     exit 1
@@ -354,7 +387,7 @@ if requires_l7_access_set; then
   for gateway in "${gateways[@]}"; do
     wait_for_gateway_ready "${gateway}"
   done
-  for route in "${http_routes[@]}"; do
+  for route in "${http_route_resources[@]}"; do
     wait_for_route_accepted httproute "${route}"
   done
 
@@ -384,10 +417,7 @@ fi
 
 if has_check proxy; then
   echo "[egress-data-plane-smoke] preset proxy TCP smoke"
-  proxy_connect_host="$(require_preset_proxy_pairing)"
-  run_smoke_pod "${proxy_pod}" "${l4_service_account}" "set -eu
-nc -vz -w 5 ${proxy_connect_host} ${proxy_port}
-echo \"[proxy] ${proxy_connect_host}:${proxy_port} ok\""
+  require_preset_proxy_pairing
 fi
 
 if has_check dynamic-authz; then

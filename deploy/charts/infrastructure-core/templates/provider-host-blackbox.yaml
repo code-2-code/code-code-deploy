@@ -61,6 +61,8 @@ spec:
     metadata:
       labels:
 {{ include "infrastructure.labels" (dict "root" . "name" "provider-host-blackbox-exporter" "componentLabel" "metrics") | nindent 8 }}
+      annotations:
+        checksum/provider-host-blackbox-config: {{ printf "%s|%s" .Values.providerHostTelemetry.module .Values.providerHostTelemetry.moduleTimeout | sha256sum }}
     spec:
       serviceAccountName: provider-host-blackbox-exporter
       automountServiceAccountToken: false

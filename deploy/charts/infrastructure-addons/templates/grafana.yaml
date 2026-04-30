@@ -65,6 +65,10 @@ spec:
 {{ include "infrastructure.selectorLabels" (dict "root" . "name" "grafana") | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/grafana-datasources: {{ tpl (.Files.Get "files/grafana/datasources.yaml") . | sha256sum }}
+        checksum/grafana-dashboard-providers: {{ (.Files.Glob "files/grafana/provisioning/*.yaml").AsConfig | sha256sum }}
+        checksum/grafana-dashboards: {{ (.Files.Glob "files/grafana/dashboards/*.json").AsConfig | sha256sum }}
       labels:
 {{ include "infrastructure.labels" (dict "root" . "name" "grafana" "componentLabel" "dashboard") | nindent 8 }}
 {{ include "infrastructure.observabilityAmbientPodLabels" (dict "root" .) | nindent 8 }}
@@ -99,12 +103,12 @@ spec:
               value: "false"
             - name: GF_AUTH_ANONYMOUS_ENABLED
               value: "true"
-            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
-              value: {{ .Values.grafana.anonymousOrgRole | quote }}
-            - name: GF_USERS_VIEWERS_CAN_EDIT
-              value: {{ ternary "true" "false" .Values.grafana.viewersCanEdit | quote }}
             - name: GF_EXPLORE_ENABLED
               value: {{ ternary "true" "false" .Values.grafana.exploreEnabled | quote }}
+            {{- range .Values.grafana.featureToggles }}
+            - name: GF_FEATURE_TOGGLES_{{ . }}
+              value: "true"
+            {{- end }}
             - name: GF_AUTH_DISABLE_LOGIN_FORM
               value: "true"
             - name: GF_SECURITY_ALLOW_EMBEDDING

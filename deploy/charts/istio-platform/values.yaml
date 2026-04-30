@@ -122,5 +122,7 @@ components:
     externalPorts:
       - 80
       - 443
+    forwarderPorts:
+      - 8443
     proxyPorts:
       - 10809

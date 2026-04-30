@@ -52,12 +52,11 @@ grafana:
   publicUrl: ""
   # -- Root URL passed to Grafana for subpath deployments.
   rootUrl: /
-  # -- Anonymous org role for local or shared dashboards.
-  anonymousOrgRole: Viewer
-  # -- Allow viewers to edit panels in local debugging setups.
-  viewersCanEdit: false
   # -- Toggle the Grafana Explore UI.
   exploreEnabled: true
+  # -- Grafana feature toggles enabled through individual GF_FEATURE_TOGGLES_<name> env vars.
+  featureToggles:
+    - kubernetesLogsDrilldown
   route:
     # -- Publish Grafana through a Gateway API HTTPRoute.
     enabled: false
