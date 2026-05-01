@@ -2,6 +2,10 @@
 
 Local JSON schemas used by `make -C deploy validate` and `validate-all` when public kubeconform catalogs do not publish a schema for a CRD we render.
 
+CI validation does not fetch remote schema catalogs by default. If a local
+environment needs an extra catalog, set `KUBECONFORM_REMOTE_SCHEMA_LOCATIONS`
+outside the repository.
+
 ## Kiali
 
 `kiali.io/kiali_v1alpha1.json` is generated from the official Kiali Operator CRD:

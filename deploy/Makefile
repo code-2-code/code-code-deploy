@@ -116,7 +116,8 @@ BAKE_CHECK_CONTEXT_PATHS := code-code-deploy/.dockerignore code-code-deploy/.git
 BAKE_CHECK_TAR_EXCLUDES := --exclude-vcs --exclude='*/node_modules' --exclude='*/dist' --exclude='*/coverage' --exclude='*/.turbo' --exclude='*/.vite' --exclude='*/tmp' --exclude='*/.tmp'
 
 KUBERNETES_VERSION ?= 1.35.0
-KUBECONFORM_SCHEMA_LOCATIONS ?= default $(DEPLOY_DIR)/schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
+KUBECONFORM_REMOTE_SCHEMA_LOCATIONS ?=
+KUBECONFORM_SCHEMA_LOCATIONS ?= default $(DEPLOY_DIR)/schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json $(KUBECONFORM_REMOTE_SCHEMA_LOCATIONS)
 KUBECONFORM_SCHEMA_ARGS = $(foreach location,$(KUBECONFORM_SCHEMA_LOCATIONS),-schema-location '$(location)')
 KUBECONFORM_FLAGS ?= -kubernetes-version "$(KUBERNETES_VERSION)" -strict -ignore-missing-schemas -summary $(KUBECONFORM_SCHEMA_ARGS)
 GATEWAY_API_CRDS ?= $(DEPLOY_DIR)/charts/cluster-bootstrap/crds/gateway-api-v1.4.0-experimental-install.yaml
