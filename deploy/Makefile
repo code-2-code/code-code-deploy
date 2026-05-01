@@ -266,7 +266,7 @@ lint-all: ## helm lint all charts with their example values
 	@set -euo pipefail; \
 	for chart in $(DEPLOY_DIR)/charts/*; do \
 		[ -d "$$chart" ] || continue; \
-		values="$$(find "$$chart/examples" -maxdepth 1 -type f \( -name '*.yaml' -o -name '*.yml' \) 2>/dev/null | sort | head -n 1)"; \
+		values="$$(find "$$chart/examples" -maxdepth 1 -type f \( -name '*.yaml' -o -name '*.yml' \) 2>/dev/null | sort | sed -n '1p')"; \
 		if [ -n "$$values" ]; then \
 			$(HELM) lint "$$chart" -f "$$values"; \
 		else \
@@ -288,7 +288,7 @@ template-all: ## helm template all charts to /tmp for review
 	for chart in $(DEPLOY_DIR)/charts/*; do \
 		[ -d "$$chart" ] || continue; \
 		name="$$(basename "$$chart")"; \
-		values="$$(find "$$chart/examples" -maxdepth 1 -type f \( -name '*.yaml' -o -name '*.yml' \) 2>/dev/null | sort | head -n 1)"; \
+		values="$$(find "$$chart/examples" -maxdepth 1 -type f \( -name '*.yaml' -o -name '*.yml' \) 2>/dev/null | sort | sed -n '1p')"; \
 		printf "[template-all] %s\n" "$$name"; \
 		if [ -n "$$values" ]; then \
 			$(HELM) template "code-code-$$name" "$$chart" -f "$$values" > "$$out_dir/$$name.yaml"; \
@@ -312,7 +312,7 @@ validate-all: ## helm template all charts + kubeconform
 	for chart in $(DEPLOY_DIR)/charts/*; do \
 		[ -d "$$chart" ] || continue; \
 		name="$$(basename "$$chart")"; \
-		values="$$(find "$$chart/examples" -maxdepth 1 -type f \( -name '*.yaml' -o -name '*.yml' \) 2>/dev/null | sort | head -n 1)"; \
+		values="$$(find "$$chart/examples" -maxdepth 1 -type f \( -name '*.yaml' -o -name '*.yml' \) 2>/dev/null | sort | sed -n '1p')"; \
 		printf "[validate-all] %s\n" "$$name"; \
 		if [ -n "$$values" ]; then \
 			$(HELM) template "code-code-$$name" "$$chart" -f "$$values"; \
