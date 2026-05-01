@@ -6,6 +6,15 @@ Current tested upstream baseline:
 
 - Istio Ambient: `1.29.2` (`base`, `istiod`, `cni`, `ztunnel` official charts)
 - Gateway API CRDs: `v1.4.0` Experimental channel, bundled in `deploy/charts/cluster-bootstrap/crds`
+- GitHub Actions Runner Controller: `0.14.1` (`gha-runner-scale-set-controller`, `gha-runner-scale-set` official OCI charts)
+
+GitHub Actions runner connectivity is an infrastructure concern, not a source
+repository concern. Self-hosted runners need outbound HTTPS access to GitHub's
+Actions endpoints. If a domestic cluster cannot reach GitHub reliably, keep
+workflows unchanged and route runner egress through cluster-owned networking or
+deploy-local Helm overrides. Package and image pull pressure should use the
+existing build mirror variables and in-cluster registry/cache chart instead of
+hardcoded workflow fallbacks.
 
 Istio 1.29 is officially supported on Kubernetes 1.31-1.35. Its current
 official Gateway API tasks and Ambient Helm install docs use Gateway API
@@ -46,5 +55,7 @@ make -C deploy gateway-api-crds-apply
 | ---- | -------------- | ------- |
 | `istiod.yaml` | [istio/istiod](https://istio.io/latest/docs/ambient/install/helm/) | `helm repo add istio https://istio-release.storage.googleapis.com/charts`<br>`helm upgrade --install istio-base istio/base --version 1.29.2 -n istio-system --create-namespace --wait`<br>`helm upgrade --install istiod istio/istiod --version 1.29.2 -n istio-system -f deploy/values/istiod.yaml --wait`<br>`helm upgrade --install istio-cni istio/cni --version 1.29.2 -n istio-system --wait`<br>`helm upgrade --install ztunnel istio/ztunnel --version 1.29.2 -n istio-system --wait` |
 | `temporal.yaml` | [temporalio/temporal](https://github.com/temporalio/helm-charts) | `helm repo add temporalio https://go.temporal.io/helm-charts`<br>`helm install temporal temporalio/temporal -n code-code-infra -f deploy/values/temporal.yaml --create-namespace` |
+| `github-actions-runner-controller.yaml` | [gha-runner-scale-set-controller](https://github.com/actions/actions-runner-controller) | `make -C deploy arc-controller-up` |
+| `github-actions-runner-scale-set.yaml` | [gha-runner-scale-set](https://github.com/actions/actions-runner-controller) | Run `make -C deploy arc-auth-secret-from-gh`, then `make -C deploy arc-runner-up` |
 
 Pre-create the `postgres-auth` Secret in `code-code-infra` (with key `POSTGRES_PASSWORD`) before installing Temporal — its schema job and frontend both consume it.

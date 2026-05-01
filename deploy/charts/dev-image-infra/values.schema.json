@@ -76,10 +76,11 @@
           "additionalProperties": false,
           "properties": {
             "dockerIo": { "$ref": "#/$defs/mirror" },
+            "ghcrIo": { "$ref": "#/$defs/mirror" },
             "registryK8sIo": { "$ref": "#/$defs/mirror" },
             "quayIo": { "$ref": "#/$defs/mirror" }
           },
-          "required": ["dockerIo", "registryK8sIo", "quayIo"]
+          "required": ["dockerIo", "ghcrIo", "registryK8sIo", "quayIo"]
         }
       },
       "required": [

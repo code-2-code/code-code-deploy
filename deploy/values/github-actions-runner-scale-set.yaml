@@ -1,0 +1,106 @@
+runnerScaleSetName: code-code-k8s
+githubConfigUrl: https://github.com/code-2-code
+githubConfigSecret: github-arc-auth
+
+minRunners: 2
+maxRunners: 4
+
+controllerServiceAccount:
+  namespace: arc-systems
+  name: arc-gha-rs-controller
+
+listenerTemplate:
+  spec:
+    containers:
+      - name: listener
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+template:
+  spec:
+    initContainers:
+      - name: init-dind-externals
+        image: ghcr.io/actions/actions-runner:latest
+        command: ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
+          - name: dind-externals
+            mountPath: /home/runner/tmpDir
+    containers:
+      - name: runner
+        image: ghcr.io/actions/actions-runner:latest
+        command: ["/home/runner/run.sh"]
+        env:
+          - name: DOCKER_HOST
+            value: unix:///var/run/docker.sock
+          - name: RUNNER_WAIT_FOR_DOCKER_IN_SECONDS
+            value: "120"
+        resources:
+          requests:
+            cpu: "1"
+            memory: 1Gi
+            ephemeral-storage: 4Gi
+          limits:
+            cpu: "4"
+            memory: 8Gi
+            ephemeral-storage: 32Gi
+        volumeMounts:
+          - name: work
+            mountPath: /home/runner/_work
+          - name: dind-sock
+            mountPath: /var/run
+      - name: dind
+        image: docker:dind
+        args:
+          - dockerd
+          - --host=unix:///var/run/docker.sock
+          - --group=$(DOCKER_GROUP_GID)
+        env:
+          - name: DOCKER_GROUP_GID
+            value: "123"
+        securityContext:
+          privileged: true
+        restartPolicy: Always
+        startupProbe:
+          exec:
+            command:
+              - docker
+              - info
+          initialDelaySeconds: 0
+          failureThreshold: 24
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: "1"
+            memory: 2Gi
+            ephemeral-storage: 8Gi
+          limits:
+            cpu: "4"
+            memory: 12Gi
+            ephemeral-storage: 48Gi
+        volumeMounts:
+          - name: work
+            mountPath: /home/runner/_work
+          - name: dind-sock
+            mountPath: /var/run
+          - name: dind-externals
+            mountPath: /home/runner/externals
+    volumes:
+      - name: work
+        emptyDir:
+          sizeLimit: 32Gi
+      - name: dind-sock
+        emptyDir: {}
+      - name: dind-externals
+        emptyDir: {}

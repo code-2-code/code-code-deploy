@@ -41,6 +41,10 @@ Use these current official references before changing this repository:
 ## CI And Verification
 
 - If GitHub Actions are added here, use least-privilege `permissions`, explicit repository or path inputs, and reusable workflows for repeated image build logic.
+- Public CI logs must not echo environment-derived values or Helm/BuildKit argument strings. Suppress Make command echo for targets that pass registry, mirror, proxy, token, or credential-adjacent values, and run the CI log input guard before build checks.
+- If self-hosted GitHub Actions runners are added, use the official Actions Runner Controller `gha-runner-scale-set-controller` and `gha-runner-scale-set` Helm charts. Keep controller pods and runner pods in separate namespaces, pass GitHub credentials through Kubernetes Secret references, do not commit token material, and set bounded resources for controller, listener, and runner pods.
+- The runner scale set name is the `runs-on` contract. Change it deliberately and update workflows in the same change.
+- Keep source repositories and workflows network-agnostic. If GitHub connectivity is unstable, solve it at the runner/cluster egress layer or with deploy-owned package and image caches through ignored local env or Helm overrides; do not commit proxy URLs, proxy credentials, or region-specific mirror assumptions into source repositories or workflows.
 - Validate deployment changes with the narrowest meaningful checks:
   - `make -C deploy lint-all`
   - `make -C deploy template-all`

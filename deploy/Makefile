@@ -66,6 +66,7 @@ HELM    ?= helm
 HELM_DOCS ?= go run github.com/norwoodj/helm-docs/cmd/helm-docs@v1.14.2
 KUBECONFORM ?= go run github.com/yannh/kubeconform/cmd/kubeconform@v0.7.0
 KUBECTL ?= kubectl
+GH ?= gh
 DOCKER  ?= docker
 CURL    ?= curl
 JQ      ?= jq
@@ -133,6 +134,18 @@ INFRASTRUCTURE_ADDONS_VALUES ?= $(DEPLOY_DIR)/charts/infrastructure-addons/examp
 INFRASTRUCTURE_ADDONS_TIMEOUT ?= 10m
 INFRASTRUCTURE_ADDONS_HELM_ARGS ?=
 
+ARC_CHART_VERSION ?= 0.14.1
+ARC_CONTROLLER_RELEASE ?= arc
+ARC_CONTROLLER_NAMESPACE ?= arc-systems
+ARC_CONTROLLER_VALUES ?= $(DEPLOY_DIR)/values/github-actions-runner-controller.yaml
+ARC_RUNNER_RELEASE ?= code-code-k8s
+ARC_RUNNER_NAMESPACE ?= arc-runners
+ARC_RUNNER_VALUES ?= $(DEPLOY_DIR)/values/github-actions-runner-scale-set.yaml
+ARC_GITHUB_CONFIG_URL ?= https://github.com/code-2-code
+ARC_GITHUB_AUTH_SECRET ?= github-arc-auth
+ARC_CONTROLLER_HELM_ARGS ?=
+ARC_RUNNER_HELM_ARGS ?=
+
 ##@ General
 
 .PHONY: help
@@ -176,19 +189,19 @@ print-config: ## 打印当前生效的变量
 
 .PHONY: build
 build: ## buildx bake：构建当前主机架构镜像并 load 到本地 docker
-	cd "$(REPO_ROOT)" && $(BAKE_ENV_LOCAL) $(BUILDX) bake $(BAKE_OPTS) --pull --load $(BAKE_TARGET)
+	@cd "$(REPO_ROOT)" && $(BAKE_ENV_LOCAL) $(BUILDX) bake $(BAKE_OPTS) --pull --load $(BAKE_TARGET)
 
 .PHONY: push
 push: _require_registry ## buildx bake：构建并推送到 IMAGE_REGISTRY
-	cd "$(REPO_ROOT)" && $(BAKE_ENV_PUSH) $(BUILDX) bake $(BAKE_OPTS) --pull --push $(BAKE_TARGET)
+	@cd "$(REPO_ROOT)" && $(BAKE_ENV_PUSH) $(BUILDX) bake $(BAKE_OPTS) --pull --push $(BAKE_TARGET)
 
 .PHONY: bake-print
 bake-print: ## buildx bake --print：打印解析后的构建配置
-	cd "$(REPO_ROOT)" && $(BAKE_ENV_PUSH) $(BUILDX) bake $(BAKE_OPTS) --print $(BAKE_TARGET)
+	@cd "$(REPO_ROOT)" && $(BAKE_ENV_PUSH) $(BUILDX) bake $(BAKE_OPTS) --print $(BAKE_TARGET)
 
 .PHONY: bake-check
 bake-check: ## buildx bake --check：校验 Dockerfile / build definition
-	cd "$(REPO_ROOT)" && $(BAKE_ENV_PUSH) $(BUILDX) bake $(BAKE_OPTS) --check $(BAKE_TARGET)
+	@cd "$(REPO_ROOT)" && $(BAKE_ENV_PUSH) $(BUILDX) bake $(BAKE_OPTS) --check $(BAKE_TARGET)
 
 .PHONY: bake-check-remote
 bake-check-remote: ## 在 REMOTE_DOCKER_HOST 跑 buildx bake --check，仅传最小检查上下文
@@ -371,6 +384,59 @@ diff: _require_current_chart_path ## helm diff upgrade（需要 helm-diff 插件
 		-f "$(VALUES_PATH)" \
 		$(HELM_SET_IMAGE) \
 		--allow-unreleased
+
+##@ GitHub Actions runners
+
+.PHONY: arc-auth-secret-from-gh
+arc-auth-secret-from-gh: ## 用当前 gh token 创建/更新 ARC GitHub auth Secret（不会打印 token）
+	@set -euo pipefail; \
+	$(KUBECTL) create namespace "$(ARC_RUNNER_NAMESPACE)" --dry-run=client -o yaml | $(KUBECTL) apply -f -; \
+	token="$$( $(GH) auth token )"; \
+	token_b64="$$( printf '%s' "$$token" | base64 | tr -d '\n' )"; \
+	{ \
+		printf 'apiVersion: v1\n'; \
+		printf 'kind: Secret\n'; \
+		printf 'metadata:\n'; \
+		printf '  name: %s\n' "$(ARC_GITHUB_AUTH_SECRET)"; \
+		printf '  namespace: %s\n' "$(ARC_RUNNER_NAMESPACE)"; \
+		printf 'type: Opaque\n'; \
+		printf 'data:\n'; \
+		printf '  github_token: %s\n' "$$token_b64"; \
+	} | $(KUBECTL) apply -f -
+
+.PHONY: arc-controller-up
+arc-controller-up: ## 安装/更新官方 ARC controller
+	@$(HELM) upgrade --install "$(ARC_CONTROLLER_RELEASE)" \
+		oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller \
+		--version "$(ARC_CHART_VERSION)" \
+		--namespace "$(ARC_CONTROLLER_NAMESPACE)" \
+		--create-namespace \
+		--atomic --wait --timeout 5m \
+		-f "$(ARC_CONTROLLER_VALUES)" \
+		$(ARC_CONTROLLER_HELM_ARGS)
+
+.PHONY: arc-runner-up
+arc-runner-up: ## 安装/更新 code-code org runner scale set
+	@$(HELM) upgrade --install "$(ARC_RUNNER_RELEASE)" \
+		oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
+		--version "$(ARC_CHART_VERSION)" \
+		--namespace "$(ARC_RUNNER_NAMESPACE)" \
+		--create-namespace \
+		--atomic --wait --timeout 10m \
+		-f "$(ARC_RUNNER_VALUES)" \
+		--set githubConfigUrl="$(ARC_GITHUB_CONFIG_URL)" \
+		--set githubConfigSecret="$(ARC_GITHUB_AUTH_SECRET)" \
+		$(ARC_RUNNER_HELM_ARGS)
+
+.PHONY: arc-up
+arc-up: arc-auth-secret-from-gh arc-controller-up arc-runner-up ## 创建 Secret 并安装/更新 ARC controller + runner scale set
+
+.PHONY: arc-status
+arc-status: ## 查看 ARC Helm releases 和 runner pods
+	$(HELM) list -n "$(ARC_CONTROLLER_NAMESPACE)"
+	$(HELM) list -n "$(ARC_RUNNER_NAMESPACE)"
+	$(KUBECTL) get pods -n "$(ARC_CONTROLLER_NAMESPACE)"
+	$(KUBECTL) get pods -n "$(ARC_RUNNER_NAMESPACE)"
 
 ##@ Self-hosted registry (单机/内网部署用)
 

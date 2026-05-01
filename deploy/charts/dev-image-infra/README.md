@@ -53,6 +53,9 @@ make -C deploy docs
 | cache.mirrors.dockerIo.enabled | bool | `true` | Enable or disable the docker.io pull-through cache. |
 | cache.mirrors.dockerIo.nodePort | int | `30502` | NodePort exposed for the docker.io cache. |
 | cache.mirrors.dockerIo.persistentVolumeClaim | string | `""` | Existing PVC name for the docker.io cache; empty uses ephemeral storage. |
+| cache.mirrors.ghcrIo.enabled | bool | `true` | Enable or disable the ghcr.io pull-through cache. |
+| cache.mirrors.ghcrIo.nodePort | int | `30505` | NodePort exposed for the ghcr.io cache. |
+| cache.mirrors.ghcrIo.persistentVolumeClaim | string | `""` | Existing PVC name for the ghcr.io cache; empty uses ephemeral storage. |
 | cache.mirrors.registryK8sIo.enabled | bool | `true` | Enable or disable the registry.k8s.io pull-through cache. |
 | cache.mirrors.registryK8sIo.nodePort | int | `30503` | NodePort exposed for the registry.k8s.io cache. |
 | cache.mirrors.registryK8sIo.persistentVolumeClaim | string | `""` | Existing PVC name for the registry.k8s.io cache; empty uses ephemeral storage. |

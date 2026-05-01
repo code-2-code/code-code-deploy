@@ -52,6 +52,15 @@ cache:
       nodePort: 30502
       # -- Existing PVC name for the docker.io cache; empty uses ephemeral storage.
       persistentVolumeClaim: ""
+    ghcrIo:
+      # -- Enable or disable the ghcr.io pull-through cache.
+      enabled: true
+      name: code-code-cache-ghcr-io
+      remoteUrl: https://ghcr.io
+      # -- NodePort exposed for the ghcr.io cache.
+      nodePort: 30505
+      # -- Existing PVC name for the ghcr.io cache; empty uses ephemeral storage.
+      persistentVolumeClaim: ""
     registryK8sIo:
       # -- Enable or disable the registry.k8s.io pull-through cache.
       enabled: true
