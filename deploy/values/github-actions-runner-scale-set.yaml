@@ -61,6 +61,12 @@ template:
             value: /home/runner/.cache/npm
           - name: npm_config_cache
             value: /home/runner/.cache/npm
+          - name: PNPM_HOME
+            value: /home/runner/.local/share/pnpm
+          - name: XDG_DATA_HOME
+            value: /home/runner/.cache
+          - name: COREPACK_HOME
+            value: /home/runner/.cache/corepack
           - name: PIP_CACHE_DIR
             value: /home/runner/.cache/pip
           - name: UV_CACHE_DIR
