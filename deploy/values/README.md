@@ -16,11 +16,22 @@ deploy-local Helm overrides. Package and image pull pressure should use the
 existing build mirror variables and in-cluster registry/cache chart instead of
 hardcoded workflow fallbacks.
 
-The ARC runner scale set also injects non-secret tool mirrors for Go, npm, and
-Python package downloads. Keep credentialed HTTP proxy settings in Kubernetes
-Secrets referenced by the official ARC `proxy.*.credentialSecretRef` values,
-or in ignored local Helm overrides. Do not put proxy credentials in workflow
-files, repo variables, or committed values.
+The development image infrastructure chart owns pull-through registry caches
+for Docker Hub, GHCR, registry.k8s.io, and Quay. When those caches are deployed
+behind a domestic egress proxy, set `cache.proxy.existingSecret` or local,
+credential-free `cache.proxy.*Url` overrides on that chart. Do not put proxy
+URLs with credentials into committed values or GitHub Actions variables.
+
+The ARC runner scale set mounts a bounded package cache PVC at
+`/home/runner/.cache`, expects Go to be pre-populated in the runner image's
+standard GitHub tool cache at `/opt/hostedtoolcache`, and optionally reads
+package mirror variables from the `code-code-runner-mirrors` ConfigMap. Create
+that ConfigMap from deploy-local environment variables with
+`make -C deploy arc-runner-mirrors-up`. Keep credentialed HTTP proxy settings
+in Kubernetes Secrets referenced by the official ARC
+`proxy.*.credentialSecretRef` values, or in ignored local Helm overrides. Do
+not put proxy credentials or cluster-specific mirror URLs in workflow files,
+repo variables, or committed values.
 
 Istio 1.29 is officially supported on Kubernetes 1.31-1.35. Its current
 official Gateway API tasks and Ambient Helm install docs use Gateway API

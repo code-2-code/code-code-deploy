@@ -50,6 +50,10 @@ make -C deploy docs
 | registry.service.nodePort | int | `30500` | NodePort exposed for the writable registry service. |
 | registry.storage.persistentVolumeClaim | string | `""` | Existing PVC name for registry storage; empty uses ephemeral storage. |
 | cache.enabled | bool | `true` | Enable or disable the pull-through cache tier. |
+| cache.proxy.existingSecret | string | `""` | Existing Secret with HTTP_PROXY, HTTPS_PROXY, NO_PROXY and optional lowercase equivalents for cache pods. |
+| cache.proxy.httpUrl | string | `""` | Anonymous HTTP proxy URL for cache pods; leave empty when egress is direct or secret-backed. |
+| cache.proxy.httpsUrl | string | `""` | Anonymous HTTPS proxy URL for cache pods; leave empty when egress is direct or secret-backed. |
+| cache.proxy.noProxy | string | `""` | Comma-separated hosts, domains, IP ranges, or CIDRs that cache pods should not proxy. |
 | cache.mirrors.dockerIo.enabled | bool | `true` | Enable or disable the docker.io pull-through cache. |
 | cache.mirrors.dockerIo.nodePort | int | `30502` | NodePort exposed for the docker.io cache. |
 | cache.mirrors.dockerIo.persistentVolumeClaim | string | `""` | Existing PVC name for the docker.io cache; empty uses ephemeral storage. |

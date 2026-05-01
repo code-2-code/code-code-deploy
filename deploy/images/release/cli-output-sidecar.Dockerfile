@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 
-FROM --platform=$BUILDPLATFORM golang:1.26-bookworm AS build
+ARG GO_BASE_IMAGE=golang:1.26-bookworm
+
+FROM --platform=$BUILDPLATFORM ${GO_BASE_IMAGE} AS build
 
 ARG GOPROXY
 ARG TARGETOS=linux

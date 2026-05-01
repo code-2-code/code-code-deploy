@@ -54,6 +54,64 @@ spec:
             - name: REGISTRY_PROXY_REMOTEURL
               value: {{ .remoteUrl | quote }}
             {{- end }}
+            {{- $proxy := .proxy | default dict }}
+            {{- if $proxy.existingSecret }}
+            - name: HTTP_PROXY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $proxy.existingSecret | quote }}
+                  key: HTTP_PROXY
+                  optional: true
+            - name: HTTPS_PROXY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $proxy.existingSecret | quote }}
+                  key: HTTPS_PROXY
+                  optional: true
+            - name: NO_PROXY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $proxy.existingSecret | quote }}
+                  key: NO_PROXY
+                  optional: true
+            - name: http_proxy
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $proxy.existingSecret | quote }}
+                  key: http_proxy
+                  optional: true
+            - name: https_proxy
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $proxy.existingSecret | quote }}
+                  key: https_proxy
+                  optional: true
+            - name: no_proxy
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $proxy.existingSecret | quote }}
+                  key: no_proxy
+                  optional: true
+            {{- else }}
+            {{- if $proxy.httpUrl }}
+            - name: HTTP_PROXY
+              value: {{ $proxy.httpUrl | quote }}
+            - name: http_proxy
+              value: {{ $proxy.httpUrl | quote }}
+            {{- end }}
+            {{- if $proxy.httpsUrl }}
+            - name: HTTPS_PROXY
+              value: {{ $proxy.httpsUrl | quote }}
+            - name: https_proxy
+              value: {{ $proxy.httpsUrl | quote }}
+            {{- end }}
+            {{- if $proxy.noProxy }}
+            - name: NO_PROXY
+              value: {{ $proxy.noProxy | quote }}
+            - name: no_proxy
+              value: {{ $proxy.noProxy | quote }}
+            {{- end }}
+            {{- end }}
           resources:
 {{ toYaml .resources | nindent 12 }}
           securityContext:

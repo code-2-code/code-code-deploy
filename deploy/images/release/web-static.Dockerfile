@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1
 
-FROM --platform=$BUILDPLATFORM node:24-bookworm AS build
+ARG NODE_BASE_IMAGE=node:24-bookworm
+ARG NGINX_UNPRIVILEGED_BASE_IMAGE=nginxinc/nginx-unprivileged:1.29-alpine
+
+FROM --platform=$BUILDPLATFORM ${NODE_BASE_IMAGE} AS build
 
 ARG BUILD_NPM_REGISTRY
 ARG COREPACK_NPM_REGISTRY
@@ -47,7 +50,7 @@ RUN --mount=type=cache,target=/pnpm/store,id=code-code-web-static-pnpm-store,sha
 
 RUN pnpm --filter "${WEB_FILTER}" build
 
-FROM nginxinc/nginx-unprivileged:1.29-alpine
+FROM ${NGINX_UNPRIVILEGED_BASE_IMAGE}
 
 ARG WEB_DIST
 ARG NGINX_CONFIG

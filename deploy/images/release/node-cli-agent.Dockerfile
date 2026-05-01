@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 
-FROM node:24-bookworm-slim
+ARG NODE_SLIM_BASE_IMAGE=node:24-bookworm-slim
+
+FROM ${NODE_SLIM_BASE_IMAGE}
 
 ARG NPM_CONFIG_REGISTRY
 ARG CLI_PACKAGE

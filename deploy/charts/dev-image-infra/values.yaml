@@ -32,6 +32,15 @@ cache:
   image: registry:2.8.3
   replicaCount: 1
   port: 5000
+  proxy:
+    # -- Existing Secret with HTTP_PROXY, HTTPS_PROXY, NO_PROXY and optional lowercase equivalents for cache pods.
+    existingSecret: ""
+    # -- Anonymous HTTP proxy URL for cache pods; leave empty when egress is direct or secret-backed.
+    httpUrl: ""
+    # -- Anonymous HTTPS proxy URL for cache pods; leave empty when egress is direct or secret-backed.
+    httpsUrl: ""
+    # -- Comma-separated hosts, domains, IP ranges, or CIDRs that cache pods should not proxy.
+    noProxy: ""
   service:
     type: NodePort
   deleteEnabled: true

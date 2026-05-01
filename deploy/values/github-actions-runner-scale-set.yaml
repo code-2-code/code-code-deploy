@@ -23,9 +23,12 @@ listenerTemplate:
 
 template:
   spec:
+    securityContext:
+      fsGroup: 1001
+      fsGroupChangePolicy: OnRootMismatch
     initContainers:
       - name: init-dind-externals
-        image: ghcr.io/actions/actions-runner:latest
+        image: ghcr.io/actions/actions-runner:2.330.0
         command: ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
         resources:
           requests:
@@ -39,29 +42,33 @@ template:
             mountPath: /home/runner/tmpDir
     containers:
       - name: runner
-        image: ghcr.io/actions/actions-runner:latest
+        image: ghcr.io/actions/actions-runner:2.330.0
         command: ["/home/runner/run.sh"]
         env:
           - name: DOCKER_HOST
             value: unix:///var/run/docker.sock
           - name: RUNNER_WAIT_FOR_DOCKER_IN_SECONDS
             value: "120"
-          - name: GO_DOWNLOAD_BASE_URL
-            value: https://golang.google.cn/dl
-          - name: GOPROXY
-            value: https://goproxy.cn,direct
-          - name: GOSUMDB
-            value: sum.golang.google.cn
-          - name: GOPRIVATE
-            value: code-code.internal/*,github.com/code-2-code/*
-          - name: NPM_CONFIG_REGISTRY
-            value: https://registry.npmmirror.com
-          - name: npm_config_registry
-            value: https://registry.npmmirror.com
-          - name: PIP_INDEX_URL
-            value: https://pypi.tuna.tsinghua.edu.cn/simple
-          - name: UV_INDEX_URL
-            value: https://pypi.tuna.tsinghua.edu.cn/simple
+          - name: RUNNER_TOOL_CACHE
+            value: /opt/hostedtoolcache
+          - name: AGENT_TOOLSDIRECTORY
+            value: /opt/hostedtoolcache
+          - name: GOMODCACHE
+            value: /home/runner/.cache/go/pkg/mod
+          - name: GOCACHE
+            value: /home/runner/.cache/go-build
+          - name: NPM_CONFIG_CACHE
+            value: /home/runner/.cache/npm
+          - name: npm_config_cache
+            value: /home/runner/.cache/npm
+          - name: PIP_CACHE_DIR
+            value: /home/runner/.cache/pip
+          - name: UV_CACHE_DIR
+            value: /home/runner/.cache/uv
+        envFrom:
+          - configMapRef:
+              name: code-code-runner-mirrors
+              optional: true
         resources:
           requests:
             cpu: "1"
@@ -76,6 +83,8 @@ template:
             mountPath: /home/runner/_work
           - name: dind-sock
             mountPath: /var/run
+          - name: runner-package-cache
+            mountPath: /home/runner/.cache
       - name: dind
         image: docker:dind
         args:
@@ -121,3 +130,6 @@ template:
         emptyDir: {}
       - name: dind-externals
         emptyDir: {}
+      - name: runner-package-cache
+        persistentVolumeClaim:
+          claimName: code-code-runner-package-cache

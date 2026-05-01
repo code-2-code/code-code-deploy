@@ -61,6 +61,17 @@
         "image": { "type": "string", "minLength": 1 },
         "replicaCount": { "type": "integer", "minimum": 1 },
         "port": { "type": "integer", "minimum": 1 },
+        "proxy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "existingSecret": { "type": "string" },
+            "httpUrl": { "type": "string" },
+            "httpsUrl": { "type": "string" },
+            "noProxy": { "type": "string" }
+          },
+          "required": ["existingSecret", "httpUrl", "httpsUrl", "noProxy"]
+        },
         "service": {
           "type": "object",
           "additionalProperties": false,
@@ -88,6 +99,7 @@
         "image",
         "replicaCount",
         "port",
+        "proxy",
         "service",
         "deleteEnabled",
         "resources",
