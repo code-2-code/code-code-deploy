@@ -1,0 +1,128 @@
+name: Deploy Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify deploy assets
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout deploy
+        uses: actions/checkout@v6
+        with:
+          path: code-code-deploy
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout platform auth/network
+        uses: actions/checkout@v6
+        with:
+          repository: code-2-code/code-code-platform-auth-network
+          path: code-code-platform-auth-network
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout platform catalog
+        uses: actions/checkout@v6
+        with:
+          repository: code-2-code/code-code-platform-catalog
+          path: code-code-platform-catalog
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout platform provider
+        uses: actions/checkout@v6
+        with:
+          repository: code-2-code/code-code-platform-provider
+          path: code-code-platform-provider
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout platform profile
+        uses: actions/checkout@v6
+        with:
+          repository: code-2-code/code-code-platform-profile
+          path: code-code-platform-profile
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout platform agent runtime
+        uses: actions/checkout@v6
+        with:
+          repository: code-2-code/code-code-platform-agent-runtime
+          path: code-code-platform-agent-runtime
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout platform notifications
+        uses: actions/checkout@v6
+        with:
+          repository: code-2-code/code-code-platform-notifications
+          path: code-code-platform-notifications
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout console API
+        uses: actions/checkout@v6
+        with:
+          repository: code-2-code/code-code-console-api
+          path: code-code-console-api
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout console web
+        uses: actions/checkout@v6
+        with:
+          repository: code-2-code/code-code-console-web
+          path: code-code-console-web
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Checkout showcase API
+        uses: actions/checkout@v6
+        with:
+          repository: code-2-code/code-code-showcase-api
+          path: code-code-showcase-api
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: code-code-deploy/deploy/agents/sidecars/cli-output/go.mod
+          cache: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Check scripts
+        run: make -C code-code-deploy/deploy scripts-check
+
+      - name: Test deploy sidecar
+        working-directory: code-code-deploy/deploy/agents/sidecars/cli-output
+        run: go test ./...
+
+      - name: Lint Helm charts
+        run: make -C code-code-deploy/deploy lint-all
+
+      - name: Render Helm charts
+        run: make -C code-code-deploy/deploy template-all
+
+      - name: Validate Helm manifests
+        run: make -C code-code-deploy/deploy validate-all
+
+      - name: Check image build definitions
+        run: make -C code-code-deploy/deploy bake-check

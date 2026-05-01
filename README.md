@@ -24,3 +24,7 @@ cd deploy && make template
 cd deploy && make scripts-check
 cd deploy && make bake-print
 ```
+
+CI runs the same static deploy checks on pull requests and pushes to `main`:
+script syntax, deploy-owned sidecar tests, Helm lint/template/validate, and
+Buildx Bake checks against the split source repository contexts.
