@@ -35,7 +35,7 @@ ENV RUNNER_TOOL_CACHE=/opt/hostedtoolcache \
     GOCACHE=/home/runner/.cache/go-build \
     NPM_CONFIG_CACHE=/home/runner/.cache/npm \
     npm_config_cache=/home/runner/.cache/npm \
-    PNPM_HOME=/home/runner/.local/share/pnpm \
+    PNPM_HOME=/home/runner/.cache/pnpm \
     XDG_DATA_HOME=/home/runner/.cache \
     PIP_CACHE_DIR=/home/runner/.cache/pip \
     UV_CACHE_DIR=/home/runner/.cache/uv \
@@ -130,8 +130,8 @@ RUN set -eu; \
     go install "google.golang.org/protobuf/cmd/protoc-gen-go@v${PROTOC_GEN_GO_VERSION}"; \
     go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc@v${PROTOC_GEN_GO_GRPC_VERSION}"; \
     go install "connectrpc.com/connect/cmd/protoc-gen-connect-go@v${PROTOC_GEN_CONNECT_GO_VERSION}"; \
-    mkdir -p /home/runner/.cache/go/pkg/mod /home/runner/.cache/go-build /home/runner/.cache/npm /home/runner/.cache/pnpm/store /home/runner/.cache/pip /home/runner/.cache/uv /home/runner/.cache/corepack /home/runner/.local/share/pnpm; \
-    chown -R runner:runner "${RUNNER_TOOL_CACHE}" /home/runner/.cache /home/runner/.local; \
+    mkdir -p /home/runner/.cache/go/pkg/mod /home/runner/.cache/go-build /home/runner/.cache/npm /home/runner/.cache/pnpm/store /home/runner/.cache/pip /home/runner/.cache/uv /home/runner/.cache/corepack; \
+    chown -R runner:runner "${RUNNER_TOOL_CACHE}" /home/runner/.cache; \
     rm -rf /tmp/go.tar.gz /tmp/go-install /tmp/node.tar.xz /tmp/node-install /tmp/helm.tar.gz "/tmp/linux-${helm_arch}" /tmp/buf.tar.gz /tmp/buf-install
 
 USER runner

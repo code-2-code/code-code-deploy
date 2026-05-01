@@ -24,9 +24,10 @@ URLs with credentials into committed values or GitHub Actions variables.
 
 The ARC runner scale set mounts a bounded package cache PVC at
 `/home/runner/.cache`, expects Go to be pre-populated in the runner image's
-standard GitHub tool cache at `/opt/hostedtoolcache`, and optionally reads
-package mirror variables from the `code-code-runner-mirrors` ConfigMap. Create
-that ConfigMap from deploy-local environment variables with
+standard GitHub tool cache at `/opt/hostedtoolcache`, and keeps Go module,
+Go build, npm, pnpm, pip, uv, and Corepack caches under that PVC. The runner
+optionally reads package mirror variables from the `code-code-runner-mirrors`
+ConfigMap. Create that ConfigMap from deploy-local environment variables with
 `make -C deploy arc-runner-mirrors-up`. Keep credentialed HTTP proxy settings
 in Kubernetes Secrets referenced by the official ARC
 `proxy.*.credentialSecretRef` values, or in ignored local Helm overrides. Do
