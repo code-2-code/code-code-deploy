@@ -3,6 +3,8 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/../.." && pwd)"
+platform_auth_network_context="${PLATFORM_AUTH_NETWORK_CONTEXT:-$(cd "${repo_root}/.." && pwd)/code-code-platform-auth-network}"
+platform_k8s_dir="${PLATFORM_EGRESS_SMOKE_SOURCE_DIR:-${platform_auth_network_context}/packages/platform-k8s}"
 
 kubectl_bin="${KUBECTL:-kubectl}"
 go_bin="${GO:-go}"
@@ -33,6 +35,12 @@ require_tool() {
 
 require_tool "${go_bin}"
 
+if [[ ! -d "${platform_k8s_dir}" ]]; then
+  echo "[egress-smoke] missing platform auth/network source: ${platform_k8s_dir}" >&2
+  echo "[egress-smoke] set PLATFORM_AUTH_NETWORK_CONTEXT or PLATFORM_EGRESS_SMOKE_SOURCE_DIR" >&2
+  exit 1
+fi
+
 if [[ -z "${PLATFORM_EGRESS_SMOKE_GRPC_ADDR:-}" ]]; then
   require_tool "${kubectl_bin}"
   echo "[egress-smoke] port-forward svc/${service}.${namespace} ${local_port}:${service_port}"
@@ -61,7 +69,7 @@ fi
 
 echo "[egress-smoke] running control-plane access-set ${mode} smoke"
 (
-  cd "${repo_root}/packages/platform-k8s"
+  cd "${platform_k8s_dir}"
   "${go_bin}" run ./cmd/platform-egress-smoke-test
 )
 echo "[egress-smoke] ok"

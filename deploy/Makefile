@@ -17,6 +17,7 @@ SHELL := bash
 
 DEPLOY_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 REPO_ROOT  := $(abspath $(DEPLOY_DIR)/..)
+WORKSPACE_ROOT ?= $(abspath $(REPO_ROOT)/..)
 
 # Auto-load .env if present.
 ifneq (,$(wildcard $(DEPLOY_DIR)/.env))
@@ -34,12 +35,24 @@ TIMEOUT       ?= 5m
 
 IMAGE_REGISTRY ?=
 IMAGE_TAG      ?= dev-local
+IMAGE_REVISION ?=
 IMAGE_PLATFORMS ?= linux/amd64,linux/arm64
 LOCAL_ARCH ?= $(shell uname -m | sed -e 's/^x86_64$$/amd64/' -e 's/^aarch64$$/arm64/')
 LOCAL_PLATFORM ?= linux/$(LOCAL_ARCH)
 CLAUDE_CODE_CLI_VERSION ?= 2.1.121
 QWEN_CLI_VERSION        ?= 0.15.4
 GEMINI_CLI_VERSION      ?= 0.39.1
+SOURCE_URL_BASE ?= https://github.com/code-2-code
+
+PLATFORM_AUTH_NETWORK_CONTEXT ?= $(WORKSPACE_ROOT)/code-code-platform-auth-network
+PLATFORM_CATALOG_CONTEXT ?= $(WORKSPACE_ROOT)/code-code-platform-catalog
+PLATFORM_PROVIDER_CONTEXT ?= $(WORKSPACE_ROOT)/code-code-platform-provider
+PLATFORM_PROFILE_CONTEXT ?= $(WORKSPACE_ROOT)/code-code-platform-profile
+PLATFORM_AGENT_RUNTIME_CONTEXT ?= $(WORKSPACE_ROOT)/code-code-platform-agent-runtime
+PLATFORM_NOTIFICATIONS_CONTEXT ?= $(WORKSPACE_ROOT)/code-code-platform-notifications
+CONSOLE_API_CONTEXT ?= $(WORKSPACE_ROOT)/code-code-console-api
+CONSOLE_WEB_CONTEXT ?= $(WORKSPACE_ROOT)/code-code-console-web
+SHOWCASE_API_CONTEXT ?= $(WORKSPACE_ROOT)/code-code-showcase-api
 
 BAKE_FILE   := $(DEPLOY_DIR)/images/docker-bake.hcl
 BAKE_TARGET ?= default
@@ -68,16 +81,18 @@ VALUES_PATH    := $(if $(filter /%,$(VALUES)),$(VALUES),$(DEPLOY_DIR)/$(VALUES))
 IMAGE_REGISTRY_NORMALIZED := $(patsubst %/,%,$(IMAGE_REGISTRY))
 IMAGE_REGISTRY_PREFIX     := $(if $(IMAGE_REGISTRY_NORMALIZED),$(IMAGE_REGISTRY_NORMALIZED)/,)
 
-BAKE_ENV_COMMON := IMAGE_REGISTRY="$(IMAGE_REGISTRY_PREFIX)" IMAGE_TAG="$(IMAGE_TAG)" BUILD_NPM_REGISTRY="$(BUILD_NPM_REGISTRY)" BUILD_GOPROXY="$(BUILD_GOPROXY)" BUILD_PIP_INDEX_URL="$(BUILD_PIP_INDEX_URL)" BUILD_DEBIAN_MIRROR="$(BUILD_DEBIAN_MIRROR)" CLAUDE_CODE_CLI_VERSION="$(CLAUDE_CODE_CLI_VERSION)" QWEN_CLI_VERSION="$(QWEN_CLI_VERSION)" GEMINI_CLI_VERSION="$(GEMINI_CLI_VERSION)"
+BAKE_ENV_COMMON := IMAGE_REGISTRY="$(IMAGE_REGISTRY_PREFIX)" IMAGE_TAG="$(IMAGE_TAG)" IMAGE_REVISION="$(IMAGE_REVISION)" SOURCE_URL_BASE="$(SOURCE_URL_BASE)" BUILD_NPM_REGISTRY="$(BUILD_NPM_REGISTRY)" BUILD_GOPROXY="$(BUILD_GOPROXY)" BUILD_PIP_INDEX_URL="$(BUILD_PIP_INDEX_URL)" BUILD_DEBIAN_MIRROR="$(BUILD_DEBIAN_MIRROR)" CLAUDE_CODE_CLI_VERSION="$(CLAUDE_CODE_CLI_VERSION)" QWEN_CLI_VERSION="$(QWEN_CLI_VERSION)" GEMINI_CLI_VERSION="$(GEMINI_CLI_VERSION)" PLATFORM_AUTH_NETWORK_CONTEXT="$(PLATFORM_AUTH_NETWORK_CONTEXT)" PLATFORM_CATALOG_CONTEXT="$(PLATFORM_CATALOG_CONTEXT)" PLATFORM_PROVIDER_CONTEXT="$(PLATFORM_PROVIDER_CONTEXT)" PLATFORM_PROFILE_CONTEXT="$(PLATFORM_PROFILE_CONTEXT)" PLATFORM_AGENT_RUNTIME_CONTEXT="$(PLATFORM_AGENT_RUNTIME_CONTEXT)" PLATFORM_NOTIFICATIONS_CONTEXT="$(PLATFORM_NOTIFICATIONS_CONTEXT)" CONSOLE_API_CONTEXT="$(CONSOLE_API_CONTEXT)" CONSOLE_WEB_CONTEXT="$(CONSOLE_WEB_CONTEXT)" SHOWCASE_API_CONTEXT="$(SHOWCASE_API_CONTEXT)"
 BAKE_ENV_LOCAL := $(BAKE_ENV_COMMON) DEFAULT_PLATFORMS="$(LOCAL_PLATFORM)"
 BAKE_ENV_PUSH := $(BAKE_ENV_COMMON) DEFAULT_PLATFORMS="$(IMAGE_PLATFORMS)"
-BAKE_OPTS := -f $(BAKE_FILE)
+BAKE_CONTEXT_ALLOW := --allow=fs.read=$(PLATFORM_AUTH_NETWORK_CONTEXT) --allow=fs.read=$(PLATFORM_CATALOG_CONTEXT) --allow=fs.read=$(PLATFORM_PROVIDER_CONTEXT) --allow=fs.read=$(PLATFORM_PROFILE_CONTEXT) --allow=fs.read=$(PLATFORM_AGENT_RUNTIME_CONTEXT) --allow=fs.read=$(PLATFORM_NOTIFICATIONS_CONTEXT) --allow=fs.read=$(CONSOLE_API_CONTEXT) --allow=fs.read=$(CONSOLE_WEB_CONTEXT) --allow=fs.read=$(SHOWCASE_API_CONTEXT)
+BAKE_OPTS := -f $(BAKE_FILE) $(BAKE_CONTEXT_ALLOW)
 
 REMOTE_DOCKER_HOST ?= pood1e@192.168.0.126
 REMOTE_BAKE_CONTEXT ?= /tmp/code-code-bake-check
 REMOTE_BAKE_ARCHIVE ?= /tmp/code-code-bake-check.tar.gz
 REMOTE_BAKE_PLATFORM ?= linux/amd64
-BAKE_CHECK_CONTEXT_PATHS := .dockerignore deploy/Makefile deploy/images deploy/agents/common deploy/agents/claude-code deploy/agents/qwen-cli deploy/agents/gemini-cli deploy/agents/sidecars/cli-output
+BAKE_CHECK_CONTEXT_PATHS := code-code-deploy/.dockerignore code-code-deploy/.gitmodules code-code-deploy/code-code-contracts code-code-deploy/deploy/Makefile code-code-deploy/deploy/images code-code-deploy/deploy/agents/common code-code-deploy/deploy/agents/claude-code code-code-deploy/deploy/agents/qwen-cli code-code-deploy/deploy/agents/gemini-cli code-code-deploy/deploy/agents/sidecars/cli-output code-code-platform-auth-network code-code-platform-catalog code-code-platform-provider code-code-platform-profile code-code-platform-agent-runtime code-code-platform-notifications code-code-console-api code-code-console-web code-code-showcase-api
+BAKE_CHECK_TAR_EXCLUDES := --exclude-vcs --exclude='*/node_modules' --exclude='*/dist' --exclude='*/coverage' --exclude='*/.turbo' --exclude='*/.vite' --exclude='*/tmp' --exclude='*/.tmp'
 
 KUBERNETES_VERSION ?= 1.35.0
 KUBECONFORM_SCHEMA_LOCATIONS ?= default $(DEPLOY_DIR)/schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
@@ -130,15 +145,27 @@ help: ## 列出所有 target
 print-config: ## 打印当前生效的变量
 	@printf "REPO_ROOT       = %s\n" "$(REPO_ROOT)"
 	@printf "DEPLOY_DIR      = %s\n" "$(DEPLOY_DIR)"
+	@printf "WORKSPACE_ROOT  = %s\n" "$(WORKSPACE_ROOT)"
 	@printf "CHART_DIR       = %s\n" "$(CHART_DIR_PATH)"
 	@printf "RELEASE         = %s\n" "$(RELEASE)"
 	@printf "NAMESPACE       = %s\n" "$(NAMESPACE)"
 	@printf "VALUES          = %s\n" "$(VALUES_PATH)"
 	@printf "IMAGE_REGISTRY  = %s\n" "$(IMAGE_REGISTRY_NORMALIZED)"
 	@printf "IMAGE_TAG       = %s\n" "$(IMAGE_TAG)"
+	@printf "IMAGE_REVISION  = %s\n" "$(IMAGE_REVISION)"
 	@printf "LOCAL_PLATFORM  = %s\n" "$(LOCAL_PLATFORM)"
 	@printf "IMAGE_PLATFORMS = %s\n" "$(IMAGE_PLATFORMS)"
 	@printf "BAKE_TARGET     = %s\n" "$(BAKE_TARGET)"
+	@printf "SOURCE_URL_BASE = %s\n" "$(SOURCE_URL_BASE)"
+	@printf "PLATFORM_AUTH_NETWORK_CONTEXT = %s\n" "$(PLATFORM_AUTH_NETWORK_CONTEXT)"
+	@printf "PLATFORM_CATALOG_CONTEXT      = %s\n" "$(PLATFORM_CATALOG_CONTEXT)"
+	@printf "PLATFORM_PROVIDER_CONTEXT     = %s\n" "$(PLATFORM_PROVIDER_CONTEXT)"
+	@printf "PLATFORM_PROFILE_CONTEXT      = %s\n" "$(PLATFORM_PROFILE_CONTEXT)"
+	@printf "PLATFORM_AGENT_RUNTIME_CONTEXT = %s\n" "$(PLATFORM_AGENT_RUNTIME_CONTEXT)"
+	@printf "PLATFORM_NOTIFICATIONS_CONTEXT = %s\n" "$(PLATFORM_NOTIFICATIONS_CONTEXT)"
+	@printf "CONSOLE_API_CONTEXT           = %s\n" "$(CONSOLE_API_CONTEXT)"
+	@printf "CONSOLE_WEB_CONTEXT           = %s\n" "$(CONSOLE_WEB_CONTEXT)"
+	@printf "SHOWCASE_API_CONTEXT          = %s\n" "$(SHOWCASE_API_CONTEXT)"
 	@printf "CLAUDE_CODE_CLI_VERSION = %s\n" "$(CLAUDE_CODE_CLI_VERSION)"
 	@printf "QWEN_CLI_VERSION        = %s\n" "$(QWEN_CLI_VERSION)"
 	@printf "GEMINI_CLI_VERSION      = %s\n" "$(GEMINI_CLI_VERSION)"
@@ -168,9 +195,9 @@ bake-check-remote: ## 在 REMOTE_DOCKER_HOST 跑 buildx bake --check，仅传最
 	@set -euo pipefail; \
 	archive="$$(mktemp /tmp/code-code-bake-check.XXXXXX.tar.gz)"; \
 	trap 'rm -f "$$archive"' EXIT; \
-	cd "$(REPO_ROOT)" && COPYFILE_DISABLE=1 $(TAR) --no-xattrs -czf "$$archive" $(BAKE_CHECK_CONTEXT_PATHS); \
+	cd "$(WORKSPACE_ROOT)" && COPYFILE_DISABLE=1 $(TAR) --no-xattrs $(BAKE_CHECK_TAR_EXCLUDES) -czf "$$archive" $(BAKE_CHECK_CONTEXT_PATHS); \
 	$(SSH) -o BatchMode=yes "$(REMOTE_DOCKER_HOST)" 'rm -f "$(REMOTE_BAKE_ARCHIVE)" "$(REMOTE_BAKE_ARCHIVE).part"; cat > "$(REMOTE_BAKE_ARCHIVE).part"; mv "$(REMOTE_BAKE_ARCHIVE).part" "$(REMOTE_BAKE_ARCHIVE)"' < "$$archive"; \
-	$(SSH) -o BatchMode=yes "$(REMOTE_DOCKER_HOST)" 'set -eu; trap '\''rm -rf "$(REMOTE_BAKE_CONTEXT)" "$(REMOTE_BAKE_ARCHIVE)" "$(REMOTE_BAKE_ARCHIVE).part"'\'' EXIT; rm -rf "$(REMOTE_BAKE_CONTEXT)"; mkdir -p "$(REMOTE_BAKE_CONTEXT)"; tar --warning=no-unknown-keyword -xzf "$(REMOTE_BAKE_ARCHIVE)" -C "$(REMOTE_BAKE_CONTEXT)"; cd "$(REMOTE_BAKE_CONTEXT)"; IMAGE_REGISTRY="$(IMAGE_REGISTRY)" IMAGE_TAG="$(IMAGE_TAG)" IMAGE_PLATFORMS="$(REMOTE_BAKE_PLATFORM)" CLAUDE_CODE_CLI_VERSION="$(CLAUDE_CODE_CLI_VERSION)" QWEN_CLI_VERSION="$(QWEN_CLI_VERSION)" GEMINI_CLI_VERSION="$(GEMINI_CLI_VERSION)" make -C deploy bake-check'
+	$(SSH) -o BatchMode=yes "$(REMOTE_DOCKER_HOST)" 'set -eu; trap '\''rm -rf "$(REMOTE_BAKE_CONTEXT)" "$(REMOTE_BAKE_ARCHIVE)" "$(REMOTE_BAKE_ARCHIVE).part"'\'' EXIT; rm -rf "$(REMOTE_BAKE_CONTEXT)"; mkdir -p "$(REMOTE_BAKE_CONTEXT)"; tar --warning=no-unknown-keyword -xzf "$(REMOTE_BAKE_ARCHIVE)" -C "$(REMOTE_BAKE_CONTEXT)"; cd "$(REMOTE_BAKE_CONTEXT)/code-code-deploy"; IMAGE_REGISTRY="$(IMAGE_REGISTRY)" IMAGE_TAG="$(IMAGE_TAG)" IMAGE_REVISION="$(IMAGE_REVISION)" IMAGE_PLATFORMS="$(REMOTE_BAKE_PLATFORM)" CLAUDE_CODE_CLI_VERSION="$(CLAUDE_CODE_CLI_VERSION)" QWEN_CLI_VERSION="$(QWEN_CLI_VERSION)" GEMINI_CLI_VERSION="$(GEMINI_CLI_VERSION)" make -C deploy bake-check'
 
 ##@ Helm
 
@@ -303,7 +330,7 @@ smoke-egress: smoke-egress-control-plane smoke-egress-l4 smoke-egress-l7-header 
 
 .PHONY: smoke-egress-control-plane
 smoke-egress-control-plane: ## 验证 egress access-set 生命周期
-	"$(DEPLOY_DIR)/scripts/egress-access-set-smoke.sh"
+	PLATFORM_AUTH_NETWORK_CONTEXT="$(PLATFORM_AUTH_NETWORK_CONTEXT)" "$(DEPLOY_DIR)/scripts/egress-access-set-smoke.sh"
 
 .PHONY: smoke-egress-l4
 smoke-egress-l4: ## 验证 egress L4 direct TLS 和 preset proxy TCP

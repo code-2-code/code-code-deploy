@@ -6,9 +6,16 @@ ARG NPM_CONFIG_REGISTRY
 ARG CLI_PACKAGE
 ARG CLI_VERSION
 ARG AGENT_DIR
+ARG OCI_SOURCE=""
+ARG OCI_REVISION=""
+ARG OCI_VERSION=""
 
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
     NPM_CONFIG_FUND=false
+
+LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
+      org.opencontainers.image.revision="${OCI_REVISION}" \
+      org.opencontainers.image.version="${OCI_VERSION}"
 
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     test -n "${CLI_PACKAGE}" && test -n "${CLI_VERSION}" && test -n "${AGENT_DIR}"; \
