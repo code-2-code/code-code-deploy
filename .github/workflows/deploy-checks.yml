@@ -119,14 +119,22 @@ jobs:
             [registry."docker.io"]
               mirrors = ["code-code-cache-docker-io.code-code-infra.svc.cluster.local:5000"]
               http = true
+            [registry."code-code-cache-docker-io.code-code-infra.svc.cluster.local:5000"]
+              http = true
             [registry."ghcr.io"]
               mirrors = ["code-code-cache-ghcr-io.code-code-infra.svc.cluster.local:5000"]
+              http = true
+            [registry."code-code-cache-ghcr-io.code-code-infra.svc.cluster.local:5000"]
               http = true
             [registry."quay.io"]
               mirrors = ["code-code-cache-quay-io.code-code-infra.svc.cluster.local:5000"]
               http = true
+            [registry."code-code-cache-quay-io.code-code-infra.svc.cluster.local:5000"]
+              http = true
             [registry."registry.k8s.io"]
               mirrors = ["code-code-cache-registry-k8s-io.code-code-infra.svc.cluster.local:5000"]
+              http = true
+            [registry."code-code-cache-registry-k8s-io.code-code-infra.svc.cluster.local:5000"]
               http = true
             [registry."code-code-registry.code-code-infra.svc.cluster.local:5000"]
               http = true
