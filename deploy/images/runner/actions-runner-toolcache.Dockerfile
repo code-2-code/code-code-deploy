@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG ACTIONS_RUNNER_BASE_IMAGE=ghcr.io/actions/actions-runner:2.330.0
+ARG ACTIONS_RUNNER_BASE_IMAGE=ghcr.io/actions/actions-runner:2.333.1
 
 FROM ${ACTIONS_RUNNER_BASE_IMAGE}
 

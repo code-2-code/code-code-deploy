@@ -86,7 +86,7 @@ variable "GEMINI_CLI_VERSION" {
 }
 
 variable "ACTIONS_RUNNER_BASE_IMAGE" {
-  default = "ghcr.io/actions/actions-runner:2.330.0"
+  default = "ghcr.io/actions/actions-runner:2.333.1"
 }
 
 variable "ACTIONS_RUNNER_GO_VERSION" {

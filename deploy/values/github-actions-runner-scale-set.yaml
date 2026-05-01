@@ -28,7 +28,7 @@ template:
       fsGroupChangePolicy: OnRootMismatch
     initContainers:
       - name: init-dind-externals
-        image: ghcr.io/actions/actions-runner:2.330.0
+        image: ghcr.io/actions/actions-runner:2.333.1
         command: ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
         resources:
           requests:
@@ -42,7 +42,7 @@ template:
             mountPath: /home/runner/tmpDir
     containers:
       - name: runner
-        image: ghcr.io/actions/actions-runner:2.330.0
+        image: ghcr.io/actions/actions-runner:2.333.1
         command: ["/home/runner/run.sh"]
         env:
           - name: DOCKER_HOST
