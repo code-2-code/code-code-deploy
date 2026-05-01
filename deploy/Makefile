@@ -196,7 +196,11 @@ INFRA_K3D_LOADBALANCER_IMAGE ?=
 INFRA_K3D_API_HOST ?=
 INFRA_K3D_API_PORT ?= 7443
 INFRA_K3D_HTTP_PORT ?= 28080
+INFRA_K3D_HTTP_TARGET_PORT ?= 80
 INFRA_K3D_HTTPS_PORT ?= 28443
+INFRA_K3D_HTTPS_TARGET_PORT ?= 443
+INFRA_K3D_SSH_PORT ?=
+INFRA_K3D_SSH_TARGET_PORT ?= 22
 INFRA_K3D_REGISTRY_CREATE ?= false
 INFRA_K3D_REGISTRY_NAME ?= code-code-infra-registry
 INFRA_K3D_REGISTRY_PORT ?= 25000
@@ -205,6 +209,17 @@ INFRA_K3D_SERVER_MEMORY ?= 16g
 INFRA_K3D_TIMEOUT ?= 5m
 INFRA_K3D_KUBECONFIG ?= $(HOME)/.kube/$(INFRA_K3D_CLUSTER).kubeconfig
 INFRA_K3D_CONFIRM_DELETE ?=
+
+GITLAB_RELEASE ?= gitlab
+GITLAB_NAMESPACE ?= gitlab
+GITLAB_CHART ?= gitlab/gitlab
+GITLAB_CHART_VERSION ?= 9.11.2
+GITLAB_CHART_VERSION_ARG = $(if $(filter /% %.tgz %.tar.gz file://%,$(GITLAB_CHART)),,--version "$(GITLAB_CHART_VERSION)")
+GITLAB_VALUES ?= $(DEPLOY_DIR)/values/gitlab/gitlab.yaml
+GITLAB_PREREQS_RELEASE ?= gitlab-prereqs
+GITLAB_PREREQS_CHART ?= $(DEPLOY_DIR)/charts/gitlab-prereqs
+GITLAB_PREREQS_HELM_ARGS ?=
+GITLAB_TIMEOUT ?= 20m
 
 ##@ General
 
@@ -599,7 +614,11 @@ infra-k3d-up: ## 用 Docker/k3d 创建隔离的 infra K3s 集群（无需 root�
 	INFRA_K3D_API_HOST="$(INFRA_K3D_API_HOST)" \
 	INFRA_K3D_API_PORT="$(INFRA_K3D_API_PORT)" \
 	INFRA_K3D_HTTP_PORT="$(INFRA_K3D_HTTP_PORT)" \
+	INFRA_K3D_HTTP_TARGET_PORT="$(INFRA_K3D_HTTP_TARGET_PORT)" \
 	INFRA_K3D_HTTPS_PORT="$(INFRA_K3D_HTTPS_PORT)" \
+	INFRA_K3D_HTTPS_TARGET_PORT="$(INFRA_K3D_HTTPS_TARGET_PORT)" \
+	INFRA_K3D_SSH_PORT="$(INFRA_K3D_SSH_PORT)" \
+	INFRA_K3D_SSH_TARGET_PORT="$(INFRA_K3D_SSH_TARGET_PORT)" \
 	INFRA_K3D_REGISTRY_CREATE="$(INFRA_K3D_REGISTRY_CREATE)" \
 	INFRA_K3D_REGISTRY_NAME="$(INFRA_K3D_REGISTRY_NAME)" \
 	INFRA_K3D_REGISTRY_PORT="$(INFRA_K3D_REGISTRY_PORT)" \
@@ -622,6 +641,34 @@ infra-k3d-down: ## 删除 infra k3d 集群；需 INFRA_K3D_CONFIRM_DELETE=code-c
 	INFRA_K3D_CLUSTER="$(INFRA_K3D_CLUSTER)" \
 	INFRA_K3D_CONFIRM_DELETE="$(INFRA_K3D_CONFIRM_DELETE)" \
 	"$(DEPLOY_DIR)/scripts/infra-k3d-down.sh"
+
+##@ GitLab stack
+
+.PHONY: gitlab-secrets-up
+gitlab-secrets-up: ## 创建/更新 GitLab 外部依赖所需 Secret（不打印 Secret 值）
+	GITLAB_NAMESPACE="$(GITLAB_NAMESPACE)" KUBECTL="$(KUBECTL)" "$(DEPLOY_DIR)/scripts/gitlab-secrets-up.sh"
+
+.PHONY: gitlab-prereqs-up
+gitlab-prereqs-up: gitlab-secrets-up ## 安装/更新 GitLab PostgreSQL、Valkey、MinIO
+	$(HELM) upgrade --install "$(GITLAB_PREREQS_RELEASE)" "$(GITLAB_PREREQS_CHART)" \
+		--namespace "$(GITLAB_NAMESPACE)" \
+		--create-namespace \
+		--atomic --wait --timeout "$(GITLAB_TIMEOUT)" \
+		$(GITLAB_PREREQS_HELM_ARGS)
+
+.PHONY: gitlab-up
+gitlab-up: gitlab-prereqs-up ## 安装/更新官方 GitLab Helm chart
+	$(HELM) upgrade --install "$(GITLAB_RELEASE)" "$(GITLAB_CHART)" \
+		$(GITLAB_CHART_VERSION_ARG) \
+		--namespace "$(GITLAB_NAMESPACE)" \
+		--create-namespace \
+		--atomic --wait --timeout "$(GITLAB_TIMEOUT)" \
+		-f "$(GITLAB_VALUES)"
+
+.PHONY: gitlab-status
+gitlab-status: ## 查看 GitLab Helm releases、PVC 和 Pod 状态
+	$(HELM) list -n "$(GITLAB_NAMESPACE)"
+	$(KUBECTL) -n "$(GITLAB_NAMESPACE)" get pods,pvc,svc
 
 ##@ Maintenance
 

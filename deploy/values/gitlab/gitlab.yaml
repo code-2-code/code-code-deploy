@@ -1,0 +1,190 @@
+global:
+  edition: ce
+  hosts:
+    domain: 192.168.0.126.nip.io
+    https: false
+    gitlab:
+      name: gitlab.192.168.0.126.nip.io
+      https: false
+    registry:
+      name: registry.192.168.0.126.nip.io
+      https: false
+    kas:
+      name: kas.192.168.0.126.nip.io
+      https: false
+  ingress:
+    configureCertmanager: false
+    tls:
+      enabled: false
+  initialRootPassword:
+    secret: gitlab-initial-root-password
+    key: password
+  psql:
+    host: gitlab-postgresql.gitlab.svc.cluster.local
+    port: 5432
+    database: gitlabhq_production
+    username: gitlab
+    password:
+      secret: gitlab-postgresql-password
+      key: postgres-password
+  redis:
+    host: gitlab-valkey.gitlab.svc.cluster.local
+    port: 6379
+    auth:
+      enabled: true
+      secret: gitlab-valkey
+      key: password
+  minio:
+    enabled: false
+  appConfig:
+    enableUsagePing: false
+    enableSeatLink: false
+    initialDefaults:
+      signupEnabled: false
+    object_store:
+      enabled: true
+      proxy_download: true
+      connection:
+        secret: gitlab-object-storage
+        key: connection
+    lfs:
+      bucket: gitlab-lfs-storage
+    artifacts:
+      bucket: gitlab-artifacts-storage
+    uploads:
+      bucket: gitlab-uploads-storage
+    packages:
+      bucket: gitlab-packages-storage
+    externalDiffs:
+      enabled: true
+      bucket: gitlab-mr-diffs-storage
+    terraformState:
+      enabled: true
+      bucket: gitlab-terraform-state-storage
+    ciSecureFiles:
+      enabled: true
+      bucket: gitlab-ci-secure-files-storage
+    dependencyProxy:
+      enabled: true
+      bucket: gitlab-dependency-proxy-storage
+    backups:
+      bucket: gitlab-backup-storage
+      tmpBucket: gitlab-tmp-storage
+
+installCertmanager: false
+certmanager-issuer:
+  email: gitlab-admin@example.invalid
+prometheus:
+  install: false
+postgresql:
+  install: false
+redis:
+  install: false
+
+nginx-ingress:
+  enabled: true
+  controller:
+    replicaCount: 1
+    minAvailable: 0
+    image:
+      digest: ""
+    service:
+      type: NodePort
+      nodePorts:
+        http: 32080
+        https: 32443
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+registry:
+  enabled: true
+  storage:
+    secret: gitlab-registry-storage
+    key: config
+  hpa:
+    minReplicas: 1
+    maxReplicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+gitlab-runner:
+  install: false
+
+gitlab:
+  webservice:
+    workerProcesses: 2
+    minReplicas: 1
+    maxReplicas: 1
+    puma:
+      threads:
+        min: 2
+        max: 2
+    resources:
+      requests:
+        cpu: 500m
+        memory: 3Gi
+      limits:
+        cpu: "2"
+        memory: 5Gi
+  sidekiq:
+    minReplicas: 1
+    maxReplicas: 1
+    concurrency: 5
+    resources:
+      requests:
+        cpu: 300m
+        memory: 1Gi
+      limits:
+        cpu: "2"
+        memory: 3Gi
+  gitaly:
+    persistence:
+      size: 50Gi
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 2Gi
+  gitlab-shell:
+    minReplicas: 1
+    maxReplicas: 1
+    service:
+      type: NodePort
+      nodePort: 32022
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+  kas:
+    minReplicas: 1
+    maxReplicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  toolbox:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi

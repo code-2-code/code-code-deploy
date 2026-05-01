@@ -11,7 +11,11 @@ loadbalancer_image="${INFRA_K3D_LOADBALANCER_IMAGE:-}"
 api_host="${INFRA_K3D_API_HOST:-}"
 api_port="${INFRA_K3D_API_PORT:-7443}"
 http_port="${INFRA_K3D_HTTP_PORT:-28080}"
+http_target_port="${INFRA_K3D_HTTP_TARGET_PORT:-80}"
 https_port="${INFRA_K3D_HTTPS_PORT:-28443}"
+https_target_port="${INFRA_K3D_HTTPS_TARGET_PORT:-443}"
+ssh_port="${INFRA_K3D_SSH_PORT:-}"
+ssh_target_port="${INFRA_K3D_SSH_TARGET_PORT:-22}"
 registry_create="${INFRA_K3D_REGISTRY_CREATE:-false}"
 registry_name="${INFRA_K3D_REGISTRY_NAME:-code-code-infra-registry}"
 registry_port="${INFRA_K3D_REGISTRY_PORT:-25000}"
@@ -75,12 +79,15 @@ else
     --servers-memory "${server_memory}"
     --timeout "${timeout}"
     --wait
-    --port "${api_host}:${http_port}:80@loadbalancer"
-    --port "${api_host}:${https_port}:443@loadbalancer"
+    --port "${api_host}:${http_port}:${http_target_port}@loadbalancer"
+    --port "${api_host}:${https_port}:${https_target_port}@loadbalancer"
     --k3s-arg "--disable=traefik@server:*"
     --k3s-arg "--disable=servicelb@server:*"
     --k3s-arg "--write-kubeconfig-mode=644@server:*"
   )
+  if [[ -n "${ssh_port}" ]]; then
+    create_args+=(--port "${api_host}:${ssh_port}:${ssh_target_port}@loadbalancer")
+  fi
   if [[ "${registry_create}" == "true" ]]; then
     create_args+=(--registry-create "${registry_name}:${api_host}:${registry_port}")
   fi

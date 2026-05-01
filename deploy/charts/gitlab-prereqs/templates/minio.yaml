@@ -1,0 +1,159 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gitlabPrereqs.minioName" . }}
+  labels:
+    {{- include "gitlabPrereqs.labels" . | nindent 4 }}
+    app.kubernetes.io/component: minio
+spec:
+  type: ClusterIP
+  ports:
+    - name: http-api
+      port: {{ .Values.minio.service.apiPort }}
+      targetPort: api
+    - name: http-console
+      port: {{ .Values.minio.service.consolePort }}
+      targetPort: console
+  selector:
+    {{- include "gitlabPrereqs.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: minio
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "gitlabPrereqs.minioName" . }}
+  labels:
+    {{- include "gitlabPrereqs.labels" . | nindent 4 }}
+    app.kubernetes.io/component: minio
+spec:
+  serviceName: {{ include "gitlabPrereqs.minioName" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "gitlabPrereqs.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: minio
+  template:
+    metadata:
+      labels:
+        {{- include "gitlabPrereqs.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: minio
+    spec:
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: minio
+          image: "{{ .Values.minio.image.repository }}:{{ .Values.minio.image.tag }}"
+          imagePullPolicy: {{ .Values.minio.image.pullPolicy }}
+          args:
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+          ports:
+            - name: api
+              containerPort: 9000
+            - name: console
+              containerPort: 9001
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.minio.existingSecret }}
+                  key: {{ .Values.minio.rootUserKey }}
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.minio.existingSecret }}
+                  key: {{ .Values.minio.rootPasswordKey }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: api
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: api
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.minio.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ "ALL" ]
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: {{ .Values.minio.storage.size }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "gitlabPrereqs.minioName" . }}-buckets
+  labels:
+    {{- include "gitlabPrereqs.labels" . | nindent 4 }}
+    app.kubernetes.io/component: minio-buckets
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "gitlabPrereqs.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: minio-buckets
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mc
+          image: "{{ .Values.minio.mcImage.repository }}:{{ .Values.minio.mcImage.tag }}"
+          imagePullPolicy: {{ .Values.minio.mcImage.pullPolicy }}
+          command: [ "sh", "-ec" ]
+          args:
+            - |
+              export MC_CONFIG_DIR=/tmp/.mc
+              mkdir -p "$MC_CONFIG_DIR"
+              until mc alias set gitlab "http://{{ include "gitlabPrereqs.minioName" . }}:{{ .Values.minio.service.apiPort }}" "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; do
+                sleep 3
+              done
+              {{- range .Values.minio.buckets }}
+              mc mb --ignore-existing "gitlab/{{ . }}"
+              {{- end }}
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.minio.existingSecret }}
+                  key: {{ .Values.minio.rootUserKey }}
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.minio.existingSecret }}
+                  key: {{ .Values.minio.rootPasswordKey }}
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ "ALL" ]

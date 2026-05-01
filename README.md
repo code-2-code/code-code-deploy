@@ -41,6 +41,21 @@ API surface.
 Keep regional image mirrors and helper-image overrides in `deploy/.env` or the
 shell environment. Do not commit those operational choices into source values.
 
+Internal GitLab stack:
+
+```bash
+cd deploy && make gitlab-prereqs-up
+cd deploy && make gitlab-up
+cd deploy && make gitlab-status
+```
+
+`gitlab-prereqs-up` installs the single-node PostgreSQL, Valkey, and MinIO
+dependencies used by the internal GitLab instance. `gitlab-up` installs the
+official GitLab Helm chart with external PostgreSQL, Valkey, object storage,
+and restrained single-replica runtime resources. Use `GITLAB_CHART` to point at
+a locally cached chart package when the cluster host cannot reach the public
+GitLab chart repository.
+
 CI runs the same static deploy checks on pull requests and pushes to `main`:
 script syntax, deploy-owned sidecar tests, Helm lint/template/validate, and
 Buildx Bake checks against the split source repository contexts.

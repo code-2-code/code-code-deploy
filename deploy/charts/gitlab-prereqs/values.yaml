@@ -1,0 +1,87 @@
+global:
+  partOf: code-code-gitlab
+
+resourcePrefix: gitlab
+
+postgresql:
+  image:
+    repository: postgres
+    tag: 17.6-bookworm
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+  database: gitlabhq_production
+  username: gitlab
+  existingSecret: gitlab-postgresql-password
+  passwordKey: postgres-password
+  storage:
+    size: 20Gi
+  config:
+    maxConnections: 400
+    sharedBuffers: 2GB
+    workMem: 8MB
+    maintenanceWorkMem: 64MB
+    statementTimeout: 60000
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "1"
+      memory: 4Gi
+
+valkey:
+  image:
+    repository: valkey/valkey
+    tag: 8.1.5-alpine
+    pullPolicy: IfNotPresent
+  service:
+    port: 6379
+  existingSecret: gitlab-valkey
+  passwordKey: password
+  storage:
+    size: 2Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+minio:
+  image:
+    repository: quay.io/minio/minio
+    tag: RELEASE.2025-09-07T16-13-09Z
+    pullPolicy: IfNotPresent
+  mcImage:
+    repository: quay.io/minio/mc
+    tag: RELEASE.2025-08-13T08-35-41Z
+    pullPolicy: IfNotPresent
+  service:
+    apiPort: 9000
+    consolePort: 9001
+  existingSecret: gitlab-minio
+  rootUserKey: root-user
+  rootPasswordKey: root-password
+  storage:
+    size: 50Gi
+  buckets:
+    - gitlab-registry-storage
+    - gitlab-lfs-storage
+    - gitlab-artifacts-storage
+    - gitlab-uploads-storage
+    - gitlab-packages-storage
+    - gitlab-mr-diffs-storage
+    - gitlab-terraform-state-storage
+    - gitlab-ci-secure-files-storage
+    - gitlab-dependency-proxy-storage
+    - gitlab-backup-storage
+    - gitlab-tmp-storage
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 2Gi
