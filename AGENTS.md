@@ -46,6 +46,7 @@ Use these current official references before changing this repository:
 - If self-hosted GitHub Actions runners are added, use the official Actions Runner Controller `gha-runner-scale-set-controller` and `gha-runner-scale-set` Helm charts. Keep controller pods and runner pods in separate namespaces, pass GitHub credentials through Kubernetes Secret references, do not commit token material, and set bounded resources for controller, listener, and runner pods.
 - The runner scale set name is the `runs-on` contract. Change it deliberately and update workflows in the same change.
 - Keep source repositories and workflows network-agnostic. If GitHub connectivity is unstable, solve it at the runner/cluster egress layer or with deploy-owned package and image caches through ignored local env or Helm overrides; do not commit proxy URLs, proxy credentials, or region-specific mirror assumptions into source repositories or workflows.
+- Runner-level tool mirrors may be set in ARC values for non-secret public package endpoints. Credentialed HTTP proxies must use Kubernetes Secrets through the official ARC proxy Secret references or ignored local overrides, and CI must mask and reject credential-looking proxy or mirror values before tool setup steps run.
 - Validate deployment changes with the narrowest meaningful checks:
   - `make -C deploy lint-all`
   - `make -C deploy template-all`

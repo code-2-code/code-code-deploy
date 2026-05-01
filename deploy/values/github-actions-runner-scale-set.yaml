@@ -46,6 +46,22 @@ template:
             value: unix:///var/run/docker.sock
           - name: RUNNER_WAIT_FOR_DOCKER_IN_SECONDS
             value: "120"
+          - name: GO_DOWNLOAD_BASE_URL
+            value: https://golang.google.cn/dl
+          - name: GOPROXY
+            value: https://goproxy.cn,direct
+          - name: GOSUMDB
+            value: sum.golang.google.cn
+          - name: GOPRIVATE
+            value: code-code.internal/*,github.com/code-2-code/*
+          - name: NPM_CONFIG_REGISTRY
+            value: https://registry.npmmirror.com
+          - name: npm_config_registry
+            value: https://registry.npmmirror.com
+          - name: PIP_INDEX_URL
+            value: https://pypi.tuna.tsinghua.edu.cn/simple
+          - name: UV_INDEX_URL
+            value: https://pypi.tuna.tsinghua.edu.cn/simple
         resources:
           requests:
             cpu: "1"
@@ -66,6 +82,7 @@ template:
           - dockerd
           - --host=unix:///var/run/docker.sock
           - --group=$(DOCKER_GROUP_GID)
+          - --registry-mirror=http://code-code-cache-docker-io.code-code-infra.svc.cluster.local:5000
         env:
           - name: DOCKER_GROUP_GID
             value: "123"

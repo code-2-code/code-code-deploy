@@ -16,6 +16,12 @@ deploy-local Helm overrides. Package and image pull pressure should use the
 existing build mirror variables and in-cluster registry/cache chart instead of
 hardcoded workflow fallbacks.
 
+The ARC runner scale set also injects non-secret tool mirrors for Go, npm, and
+Python package downloads. Keep credentialed HTTP proxy settings in Kubernetes
+Secrets referenced by the official ARC `proxy.*.credentialSecretRef` values,
+or in ignored local Helm overrides. Do not put proxy credentials in workflow
+files, repo variables, or committed values.
+
 Istio 1.29 is officially supported on Kubernetes 1.31-1.35. Its current
 official Gateway API tasks and Ambient Helm install docs use Gateway API
 `v1.4.0` Experimental-channel CRDs; Istio 1.29.2 ignores `TLSRoute` CRD
