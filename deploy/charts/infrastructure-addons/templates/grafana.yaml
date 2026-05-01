@@ -103,11 +103,17 @@ spec:
               value: "false"
             - name: GF_AUTH_ANONYMOUS_ENABLED
               value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: "Admin"
             - name: GF_EXPLORE_ENABLED
               value: {{ ternary "true" "false" .Values.grafana.exploreEnabled | quote }}
             {{- range .Values.grafana.featureToggles }}
             - name: GF_FEATURE_TOGGLES_{{ . }}
               value: "true"
+            {{- end }}
+            {{- if .Values.grafana.installPlugins }}
+            - name: GF_PLUGINS_PREINSTALL_SYNC
+              value: {{ join "," .Values.grafana.installPlugins | quote }}
             {{- end }}
             - name: GF_AUTH_DISABLE_LOGIN_FORM
               value: "true"

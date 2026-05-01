@@ -96,7 +96,18 @@
           },
           "required": ["enabled", "tracing"]
         },
-        "controlPlaneEgress": { "$ref": "#/$defs/enabledToggle" },
+        "controlPlaneEgress": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "externalPorts": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 1, "maximum": 65535 }
+            }
+          },
+          "required": ["enabled", "externalPorts"]
+        },
         "networkNamespaceEgress": {
           "type": "object",
           "additionalProperties": false,

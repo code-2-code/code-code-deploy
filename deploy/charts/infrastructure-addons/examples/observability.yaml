@@ -13,6 +13,8 @@ grafana:
   exploreEnabled: true
   featureToggles:
     - kubernetesLogsDrilldown
+  installPlugins:
+    - grafana-lokiexplore-app
   route:
     enabled: true
     host: grafana.192.168.0.126.nip.io

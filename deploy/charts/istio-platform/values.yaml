@@ -110,6 +110,12 @@ components:
   # -- components.controlPlaneEgress controls control-plane NetworkPolicy resources.
   controlPlaneEgress:
     enabled: true
+    # -- components.controlPlaneEgress.externalPorts are directly allowed egress TCP ports for control-plane pods.
+    # This keeps control-plane egress default-open on declared ports (for example external HTTPS APIs)
+    # instead of requiring host-by-host policy entries.
+    externalPorts:
+      - 80
+      - 443
   # -- components.networkNamespaceEgress controls NetworkPolicy resources in the egress namespace.
   # Kubernetes NetworkPolicy is L3/L4 only. Host/service-account authorization remains in
   # ServiceEntry, AuthorizationPolicy, ext_authz, and infrastructure firewall policy.

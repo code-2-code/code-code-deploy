@@ -76,4 +76,11 @@ spec:
           port: 443
         - protocol: TCP
           port: 8081
+{{- if .Values.components.controlPlaneEgress.externalPorts }}
+    - ports:
+{{- range .Values.components.controlPlaneEgress.externalPorts }}
+        - protocol: TCP
+          port: {{ . }}
+{{- end }}
+{{- end }}
 {{- end }}

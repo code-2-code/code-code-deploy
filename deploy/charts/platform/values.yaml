@@ -335,12 +335,6 @@ components:
           fieldRef:
             apiVersion: v1
             fieldPath: metadata.namespace
-      PLATFORM_PROVIDER_SERVICE_WORKFLOW_PROVIDER_HTTP_BASE_URL:
-        valueTpl: 'http://platform-provider-service.{{ .Release.Namespace }}.svc.cluster.local:8080/internal/actions'
-      TEMPORAL_ADDRESS:
-        valueTpl: '{{ .Values.global.temporalAddress }}'
-      TEMPORAL_NAMESPACE:
-        valueTpl: '{{ .Values.global.temporalNamespace }}'
       USER:
         value: nonroot
     egressTrustBundle: true
@@ -410,8 +404,6 @@ components:
             fieldPath: metadata.namespace
       PLATFORM_PROVIDER_ORCHESTRATION_SERVICE_PROVIDER_GRPC_ADDR:
         value: platform-provider-service:8081
-      PLATFORM_PROVIDER_ORCHESTRATION_SERVICE_PROVIDER_HTTP_BASE_URL:
-        valueTpl: 'http://platform-provider-service.{{ .Release.Namespace }}.svc.cluster.local:8080/internal/actions'
       TEMPORAL_ADDRESS:
         valueTpl: '{{ .Values.global.temporalAddress }}'
       TEMPORAL_NAMESPACE:

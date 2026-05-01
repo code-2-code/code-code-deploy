@@ -57,6 +57,9 @@ grafana:
   # -- Grafana feature toggles enabled through individual GF_FEATURE_TOGGLES_<name> env vars.
   featureToggles:
     - kubernetesLogsDrilldown
+  # -- Grafana plugins installed at startup via GF_INSTALL_PLUGINS.
+  installPlugins:
+    - grafana-lokiexplore-app
   route:
     # -- Publish Grafana through a Gateway API HTTPRoute.
     enabled: false

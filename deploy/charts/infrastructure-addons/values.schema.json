@@ -75,6 +75,10 @@
           "type": "array",
           "items": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
         },
+        "installPlugins": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
         "route": { "$ref": "#/$defs/httpRoute" }
       },
       "required": [
@@ -85,6 +89,7 @@
         "rootUrl",
         "exploreEnabled",
         "featureToggles",
+        "installPlugins",
         "route"
       ]
     },
