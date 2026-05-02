@@ -1,6 +1,0 @@
-apiVersion: v2
-name: gitlab-prereqs
-description: Single-node external dependencies for the internal GitLab stack.
-type: application
-version: 0.1.0
-appVersion: "1.0.0"

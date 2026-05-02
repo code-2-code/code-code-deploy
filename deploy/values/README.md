@@ -6,14 +6,9 @@ Current tested upstream baseline:
 
 - Istio Ambient: `1.29.2` (`base`, `istiod`, `cni`, `ztunnel` official charts)
 - Gateway API CRDs: `v1.4.0` Experimental channel, bundled in `deploy/charts/cluster-bootstrap/crds`
-- GitLab Helm chart: `9.11.2`
 
-External GitHub CI and GitHub self-hosted runners are intentionally not
-configured here. Use the internal GitLab CI/CD stack for repository automation
-after migration. Add GitLab Runner as a separate, explicit install using the
-official GitLab Runner Helm chart and Kubernetes executor; keep regional
-mirrors, pull-through caches, and proxy choices in external infrastructure or
-ignored local overrides.
+Self-hosted GitLab, GitLab Runner, bootstrap infra cluster, and GitLab project
+catalog configuration live in `code-2-code/self-hosted-infra`.
 
 Istio 1.29 is officially supported on Kubernetes 1.31-1.35. Its current
 official Gateway API tasks and Ambient Helm install docs use Gateway API
@@ -54,6 +49,4 @@ make -C deploy gateway-api-crds-apply
 | ---- | -------------- | ------- |
 | `istiod.yaml` | [istio/istiod](https://istio.io/latest/docs/ambient/install/helm/) | `helm repo add istio https://istio-release.storage.googleapis.com/charts`<br>`helm upgrade --install istio-base istio/base --version 1.29.2 -n istio-system --create-namespace --wait`<br>`helm upgrade --install istiod istio/istiod --version 1.29.2 -n istio-system -f deploy/values/istiod.yaml --wait`<br>`helm upgrade --install istio-cni istio/cni --version 1.29.2 -n istio-system --wait`<br>`helm upgrade --install ztunnel istio/ztunnel --version 1.29.2 -n istio-system --wait` |
 | `temporal.yaml` | [temporalio/temporal](https://github.com/temporalio/helm-charts) | `helm repo add temporalio https://go.temporal.io/helm-charts`<br>`helm install temporal temporalio/temporal -n code-code-infra -f deploy/values/temporal.yaml --create-namespace` |
-| `gitlab/gitlab.yaml` | [gitlab/gitlab](https://docs.gitlab.com/charts/) | `make -C deploy gitlab-up` |
-
 Pre-create the `postgres-auth` Secret in `code-code-infra` (with key `POSTGRES_PASSWORD`) before installing Temporal — its schema job and frontend both consume it.

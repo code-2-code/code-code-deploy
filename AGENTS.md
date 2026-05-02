@@ -18,8 +18,6 @@ Use these current official references before changing this repository:
 - Helm chart label conventions: https://helm.sh/docs/chart_best_practices/labels/
 - Docker build best practices and build contexts: https://docs.docker.com/build/building/best-practices/ and https://docs.docker.com/build/concepts/context/
 - Docker Buildx Bake additional contexts: https://docs.docker.com/build/bake/contexts/
-- GitLab Helm chart: https://docs.gitlab.com/charts/
-- GitLab Runner Helm chart: https://docs.gitlab.com/runner/install/kubernetes.html
 - OCI image annotations: https://github.com/opencontainers/image-spec/blob/main/annotations.md
 
 ## Kubernetes And Helm
@@ -43,7 +41,7 @@ Use these current official references before changing this repository:
 
 - External GitHub CI and GitHub self-hosted runners are intentionally absent from this repository.
 - Run deployment checks locally or from the internal GitLab CI/CD stack after repository migration.
-- When internal GitLab CI/CD is added, use the official GitLab Runner Helm chart with the Kubernetes executor, runner authentication token stored in a Kubernetes Secret, bounded concurrency/resources, and runner cache backed by internal object storage or an external cache service.
+- Internal GitLab, GitLab Runner, bootstrap infra cluster, and GitLab project catalog configuration belong in `code-2-code/self-hosted-infra`, not in this repository.
 - CI logs must not echo environment-derived values or Helm/BuildKit argument strings. Suppress Make command echo for targets that pass registry, mirror, proxy, token, or credential-adjacent values.
 - Keep source repositories and internal CI network-agnostic. If external connectivity is unstable, solve it at the runner or cluster egress layer, or with external package/image caches through ignored local env or Helm overrides; do not commit proxy URLs, proxy credentials, or region-specific mirror assumptions into source repositories.
 - Validate deployment changes with the narrowest meaningful checks:

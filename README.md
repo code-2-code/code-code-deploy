@@ -25,18 +25,6 @@ cd deploy && make scripts-check
 cd deploy && make bake-print
 ```
 
-Single-host infra isolation:
-
-```bash
-cd deploy && make infra-k3d-up
-cd deploy && make infra-k3d-status
-```
-
-`infra-k3d-up` creates a separate K3s control plane in Docker using k3d,
-publishing the API on `7443`, HTTP on `28080`, and HTTPS on `28443` by
-default. It is intended for internal infrastructure workloads such as GitLab
-without sharing the business cluster API surface.
-
 Keep regional image mirrors and helper-image overrides in `deploy/.env` or the
 shell environment. Do not commit those operational choices into source values.
 
@@ -45,21 +33,9 @@ infrastructure prerequisites. This repository consumes them through
 `IMAGE_REGISTRY`, k3d/containerd mirror configuration, or ignored local env
 files; it does not deploy or own registry/cache services.
 
-Internal GitLab stack:
-
-```bash
-cd deploy && make gitlab-prereqs-up
-cd deploy && make gitlab-up
-cd deploy && make gitlab-status
-```
-
-`gitlab-prereqs-up` installs the single-node PostgreSQL, Valkey, and MinIO
-dependencies used by the internal GitLab instance. `gitlab-up` installs the
-official GitLab Helm chart with Gateway API, bundled Envoy Gateway, external
-PostgreSQL, Valkey, object storage, and restrained single-replica runtime
-resources. Use `GITLAB_CHART` to point at a locally cached chart package and
-`GITLAB_HELM_ARGS` for local image-cache overrides when the cluster host cannot
-reach public registries.
+Self-hosted GitLab, bootstrap infra cluster, GitLab project catalog, and
+internal CI runner infrastructure live in the separate GitLab repository
+`code-2-code/self-hosted-infra`.
 
 External GitHub CI is intentionally not configured. Run static deploy checks
 locally for now; internal GitLab CI/CD should be added separately with GitLab
