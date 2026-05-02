@@ -34,12 +34,16 @@ cd deploy && make infra-k3d-status
 
 `infra-k3d-up` creates a separate K3s control plane in Docker using k3d,
 publishing the API on `7443`, HTTP on `28080`, and HTTPS on `28443` by
-default. It is intended for internal infrastructure workloads such as GitLab,
-CI runners, registry, and package caches without sharing the business cluster
-API surface.
+default. It is intended for internal infrastructure workloads such as GitLab
+and CI runners without sharing the business cluster API surface.
 
 Keep regional image mirrors and helper-image overrides in `deploy/.env` or the
 shell environment. Do not commit those operational choices into source values.
+
+Image registries, pull-through caches, and package mirrors are external
+infrastructure prerequisites. This repository consumes them through
+`IMAGE_REGISTRY`, k3d/containerd mirror configuration, runner Helm overrides,
+or ignored local env files; it does not deploy or own registry/cache services.
 
 Internal GitLab stack:
 
@@ -51,10 +55,11 @@ cd deploy && make gitlab-status
 
 `gitlab-prereqs-up` installs the single-node PostgreSQL, Valkey, and MinIO
 dependencies used by the internal GitLab instance. `gitlab-up` installs the
-official GitLab Helm chart with external PostgreSQL, Valkey, object storage,
-and restrained single-replica runtime resources. Use `GITLAB_CHART` to point at
-a locally cached chart package when the cluster host cannot reach the public
-GitLab chart repository.
+official GitLab Helm chart with Gateway API, bundled Envoy Gateway, external
+PostgreSQL, Valkey, object storage, and restrained single-replica runtime
+resources. Use `GITLAB_CHART` to point at a locally cached chart package and
+`GITLAB_HELM_ARGS` for local image-cache overrides when the cluster host cannot
+reach public registries.
 
 CI runs the same static deploy checks on pull requests and pushes to `main`:
 script syntax, deploy-owned sidecar tests, Helm lint/template/validate, and

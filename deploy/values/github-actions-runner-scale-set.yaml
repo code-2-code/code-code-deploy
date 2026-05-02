@@ -97,8 +97,6 @@ template:
           - dockerd
           - --host=unix:///var/run/docker.sock
           - --group=$(DOCKER_GROUP_GID)
-          - --insecure-registry=code-code-registry.code-code-infra.svc.cluster.local:5000
-          - --registry-mirror=http://code-code-cache-docker-io.code-code-infra.svc.cluster.local:5000
         env:
           - name: DOCKER_GROUP_GID
             value: "123"

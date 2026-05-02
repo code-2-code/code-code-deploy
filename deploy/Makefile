@@ -4,12 +4,11 @@
 #
 # 常用流程：
 #   make help                         查看所有 target
-#   make registry-up                  在集群中启动 dev image registry (NodePort 30500)
 #   IMAGE_REGISTRY=192.168.0.126:30500/ IMAGE_TAG=$(git rev-parse --short HEAD) make push
 #   IMAGE_REGISTRY=192.168.0.126:30500/ IMAGE_TAG=$(git rev-parse --short HEAD) make deploy
 #   make test
 #
-# 通过 deploy/.env 自动加载默认变量（.env.example 是模板）。
+# 通过 deploy/.env 自动加载本地默认变量。
 
 SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
@@ -83,16 +82,6 @@ SHOWCASE_API_CONTEXT ?= $(WORKSPACE_ROOT)/code-code-showcase-api
 
 BAKE_FILE   := $(DEPLOY_DIR)/images/docker-bake.hcl
 BAKE_TARGET ?= default
-
-REGISTRY_RELEASE   ?= code-code-registry
-REGISTRY_NAMESPACE ?= code-code-infra
-REGISTRY_CHART     := $(DEPLOY_DIR)/charts/dev-image-infra
-REGISTRY_HELM_ARGS ?=
-REGISTRY_CACHE_PROXY_SECRET ?= code-code-registry-cache-proxy
-REGISTRY_CACHE_HTTP_PROXY ?=
-REGISTRY_CACHE_HTTPS_PROXY ?=
-REGISTRY_CACHE_NO_PROXY ?=
-REGISTRY_CACHE_PROXY_SECRET_ARGS = $(if $(or $(REGISTRY_CACHE_HTTP_PROXY),$(REGISTRY_CACHE_HTTPS_PROXY),$(REGISTRY_CACHE_NO_PROXY)),--set cache.proxy.existingSecret='$(REGISTRY_CACHE_PROXY_SECRET)')
 
 HELM    ?= helm
 HELM_DOCS ?= go run github.com/norwoodj/helm-docs/cmd/helm-docs@v1.14.2
@@ -219,6 +208,7 @@ GITLAB_VALUES ?= $(DEPLOY_DIR)/values/gitlab/gitlab.yaml
 GITLAB_PREREQS_RELEASE ?= gitlab-prereqs
 GITLAB_PREREQS_CHART ?= $(DEPLOY_DIR)/charts/gitlab-prereqs
 GITLAB_PREREQS_HELM_ARGS ?=
+GITLAB_HELM_ARGS ?=
 GITLAB_TIMEOUT ?= 20m
 
 ##@ General
@@ -569,40 +559,6 @@ arc-status: ## 查看 ARC Helm releases 和 runner pods
 	$(KUBECTL) get pods -n "$(ARC_CONTROLLER_NAMESPACE)"
 	$(KUBECTL) get pods -n "$(ARC_RUNNER_NAMESPACE)"
 
-##@ Self-hosted registry (单机/内网部署用)
-
-.PHONY: registry-cache-proxy-secret-up
-registry-cache-proxy-secret-up: ## 从本地环境变量创建/更新 registry cache 代理 Secret（无值则跳过）
-	@set -euo pipefail; \
-	if [ -z "$(REGISTRY_CACHE_HTTP_PROXY)$(REGISTRY_CACHE_HTTPS_PROXY)$(REGISTRY_CACHE_NO_PROXY)" ]; then \
-		printf "[registry-cache-proxy-secret-up] no registry cache proxy variables set; skipped\n"; \
-		exit 0; \
-	fi; \
-	env_file="$$(mktemp /tmp/code-code-registry-cache-proxy.XXXXXX)"; \
-	trap 'rm -f "$$env_file"' EXIT; \
-	[ -z "$(REGISTRY_CACHE_HTTP_PROXY)" ] || { printf 'HTTP_PROXY=%s\n' '$(REGISTRY_CACHE_HTTP_PROXY)'; printf 'http_proxy=%s\n' '$(REGISTRY_CACHE_HTTP_PROXY)'; } >> "$$env_file"; \
-	[ -z "$(REGISTRY_CACHE_HTTPS_PROXY)" ] || { printf 'HTTPS_PROXY=%s\n' '$(REGISTRY_CACHE_HTTPS_PROXY)'; printf 'https_proxy=%s\n' '$(REGISTRY_CACHE_HTTPS_PROXY)'; } >> "$$env_file"; \
-	[ -z "$(REGISTRY_CACHE_NO_PROXY)" ] || { printf 'NO_PROXY=%s\n' '$(REGISTRY_CACHE_NO_PROXY)'; printf 'no_proxy=%s\n' '$(REGISTRY_CACHE_NO_PROXY)'; } >> "$$env_file"; \
-	$(KUBECTL) create namespace "$(REGISTRY_NAMESPACE)" --dry-run=client -o yaml | $(KUBECTL) apply -f -; \
-	$(KUBECTL) -n "$(REGISTRY_NAMESPACE)" create secret generic "$(REGISTRY_CACHE_PROXY_SECRET)" --from-env-file="$$env_file" --dry-run=client -o yaml | $(KUBECTL) apply -f -
-
-.PHONY: registry-up
-registry-up: registry-cache-proxy-secret-up ## 在 $(REGISTRY_NAMESPACE) 启动 docker registry:2 + 上游 cache (NodePort 30500/30502/30503/30504/30505)
-	$(HELM) upgrade --install "$(REGISTRY_RELEASE)" "$(REGISTRY_CHART)" \
-		--namespace "$(REGISTRY_NAMESPACE)" \
-		--create-namespace \
-		--atomic --wait --timeout 3m \
-		$(REGISTRY_CACHE_PROXY_SECRET_ARGS) \
-		$(REGISTRY_HELM_ARGS)
-
-.PHONY: registry-down
-registry-down: ## 卸载本地 registry
-	$(HELM) uninstall "$(REGISTRY_RELEASE)" --namespace "$(REGISTRY_NAMESPACE)"
-
-.PHONY: registry-status
-registry-status: ## 查看 registry 状态 + NodePort
-	$(KUBECTL) -n "$(REGISTRY_NAMESPACE)" get deploy,svc -l "app.kubernetes.io/instance=$(REGISTRY_RELEASE)"
-
 ##@ Infra cluster
 
 .PHONY: infra-k3d-up
@@ -650,7 +606,7 @@ gitlab-secrets-up: ## 创建/更新 GitLab 外部依赖所需 Secret（不打印
 
 .PHONY: gitlab-prereqs-up
 gitlab-prereqs-up: gitlab-secrets-up ## 安装/更新 GitLab PostgreSQL、Valkey、MinIO
-	$(HELM) upgrade --install "$(GITLAB_PREREQS_RELEASE)" "$(GITLAB_PREREQS_CHART)" \
+	@$(HELM) upgrade --install "$(GITLAB_PREREQS_RELEASE)" "$(GITLAB_PREREQS_CHART)" \
 		--namespace "$(GITLAB_NAMESPACE)" \
 		--create-namespace \
 		--atomic --wait --timeout "$(GITLAB_TIMEOUT)" \
@@ -658,12 +614,13 @@ gitlab-prereqs-up: gitlab-secrets-up ## 安装/更新 GitLab PostgreSQL、Valkey
 
 .PHONY: gitlab-up
 gitlab-up: gitlab-prereqs-up ## 安装/更新官方 GitLab Helm chart
-	$(HELM) upgrade --install "$(GITLAB_RELEASE)" "$(GITLAB_CHART)" \
+	@$(HELM) upgrade --install "$(GITLAB_RELEASE)" "$(GITLAB_CHART)" \
 		$(GITLAB_CHART_VERSION_ARG) \
 		--namespace "$(GITLAB_NAMESPACE)" \
 		--create-namespace \
 		--atomic --wait --timeout "$(GITLAB_TIMEOUT)" \
-		-f "$(GITLAB_VALUES)"
+		-f "$(GITLAB_VALUES)" \
+		$(GITLAB_HELM_ARGS)
 
 .PHONY: gitlab-status
 gitlab-status: ## 查看 GitLab Helm releases、PVC 和 Pod 状态

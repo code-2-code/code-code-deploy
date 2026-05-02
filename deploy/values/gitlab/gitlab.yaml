@@ -13,6 +13,8 @@ global:
       name: kas.192.168.0.126.nip.io
       https: false
   ingress:
+    enabled: false
+    provider: none
     configureCertmanager: false
     tls:
       enabled: false
@@ -34,6 +36,11 @@ global:
       enabled: true
       secret: gitlab-valkey
       key: password
+  gatewayApi:
+    enabled: true
+    installEnvoy: true
+    configureCertmanager: false
+    httpToHttpsRedirect: false
   minio:
     enabled: false
   appConfig:
@@ -82,24 +89,55 @@ redis:
   install: false
 
 nginx-ingress:
-  enabled: true
-  controller:
-    replicaCount: 1
-    minAvailable: 0
-    image:
-      digest: ""
-    service:
-      type: NodePort
-      nodePorts:
-        http: 32080
-        https: 32443
-    resources:
-      requests:
-        cpu: 50m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
+  enabled: false
+
+gatewayApiResources:
+  gateway:
+    protocol: HTTP
+  envoy:
+    proxySpec:
+      provider:
+        type: Kubernetes
+        kubernetes:
+          envoyService:
+            type: NodePort
+            externalTrafficPolicy: Cluster
+            patch:
+              type: StrategicMerge
+              value:
+                spec:
+                  ports:
+                    - port: 80
+                      nodePort: 32080
+                    - port: 22
+                      nodePort: 32022
+          envoyDeployment:
+            replicas: 1
+            pod:
+              annotations:
+                gitlab.com/prometheus_scrape: "true"
+                gitlab.com/prometheus_port: "19001"
+                gitlab.com/prometheus_path: "/stats/prometheus"
+            container:
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+
+envoy-gateway:
+  deployment:
+    replicas: 1
+    envoyGateway:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
 
 registry:
   enabled: true
@@ -161,8 +199,7 @@ gitlab:
     minReplicas: 1
     maxReplicas: 1
     service:
-      type: NodePort
-      nodePort: 32022
+      type: ClusterIP
     resources:
       requests:
         cpu: 50m
