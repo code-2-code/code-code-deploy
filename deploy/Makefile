@@ -41,29 +41,6 @@ LOCAL_PLATFORM ?= linux/$(LOCAL_ARCH)
 CLAUDE_CODE_CLI_VERSION ?= 2.1.121
 QWEN_CLI_VERSION        ?= 0.15.4
 GEMINI_CLI_VERSION      ?= 0.39.1
-ACTIONS_RUNNER_VERSION ?= 2.333.1
-ACTIONS_RUNNER_BASE_IMAGE ?= ghcr.io/actions/actions-runner:$(ACTIONS_RUNNER_VERSION)
-ACTIONS_RUNNER_GO_VERSION ?= 1.26.2
-ACTIONS_RUNNER_GO_DOWNLOAD_BASE_URL ?= https://go.dev/dl
-ACTIONS_RUNNER_GO_DOWNLOAD_FALLBACK_BASE_URL ?=
-ACTIONS_RUNNER_HELM_VERSION ?= 3.20.0
-ACTIONS_RUNNER_HELM_DOWNLOAD_BASE_URL ?= https://get.helm.sh
-ACTIONS_RUNNER_HELM_DOWNLOAD_FALLBACK_BASE_URL ?=
-ACTIONS_RUNNER_NODE_VERSION ?= 24.15.0
-ACTIONS_RUNNER_NODE_DOWNLOAD_BASE_URL ?= https://nodejs.org/dist
-ACTIONS_RUNNER_NODE_DOWNLOAD_FALLBACK_BASE_URL ?=
-ACTIONS_RUNNER_PNPM_VERSION ?= 10.33.0
-ACTIONS_RUNNER_CACHE_LAYOUT_VERSION ?= 2
-ACTIONS_RUNNER_BUF_VERSION ?= 1.69.0
-ACTIONS_RUNNER_BUF_DOWNLOAD_BASE_URL ?= https://github.com/bufbuild/buf/releases/download
-ACTIONS_RUNNER_BUF_DOWNLOAD_FALLBACK_BASE_URL ?=
-ACTIONS_RUNNER_PROTOC_GEN_GO_VERSION ?= 1.36.11
-ACTIONS_RUNNER_PROTOC_GEN_GO_GRPC_VERSION ?= 1.5.1
-ACTIONS_RUNNER_PROTOC_GEN_CONNECT_GO_VERSION ?= 1.19.2
-ACTIONS_RUNNER_PROTOC_GEN_ES_VERSION ?= 2.11.0
-ACTIONS_RUNNER_APT_MIRROR ?=
-ACTIONS_RUNNER_APT_DISABLE_THIRD_PARTY ?= false
-ACTIONS_RUNNER_IMAGE_TAG ?= runner-go$(ACTIONS_RUNNER_GO_VERSION)-node$(ACTIONS_RUNNER_NODE_VERSION)-pnpm$(ACTIONS_RUNNER_PNPM_VERSION)-cache$(ACTIONS_RUNNER_CACHE_LAYOUT_VERSION)-actions-$(ACTIONS_RUNNER_VERSION)
 SOURCE_URL_BASE ?= https://github.com/code-2-code
 GO_BASE_IMAGE ?= golang:1.26-bookworm
 NODE_BASE_IMAGE ?= node:24-bookworm
@@ -87,7 +64,6 @@ HELM    ?= helm
 HELM_DOCS ?= go run github.com/norwoodj/helm-docs/cmd/helm-docs@v1.14.2
 KUBECONFORM ?= go run github.com/yannh/kubeconform/cmd/kubeconform@v0.7.0
 KUBECTL ?= kubectl
-GH ?= gh
 DOCKER  ?= docker
 CURL    ?= curl
 JQ      ?= jq
@@ -103,7 +79,7 @@ VALUES_PATH    := $(if $(filter /%,$(VALUES)),$(VALUES),$(DEPLOY_DIR)/$(VALUES))
 IMAGE_REGISTRY_NORMALIZED := $(patsubst %/,%,$(IMAGE_REGISTRY))
 IMAGE_REGISTRY_PREFIX     := $(if $(IMAGE_REGISTRY_NORMALIZED),$(IMAGE_REGISTRY_NORMALIZED)/,)
 
-BAKE_ENV_COMMON := IMAGE_REGISTRY="$(IMAGE_REGISTRY_PREFIX)" IMAGE_TAG="$(IMAGE_TAG)" IMAGE_REVISION="$(IMAGE_REVISION)" SOURCE_URL_BASE="$(SOURCE_URL_BASE)" BUILD_NPM_REGISTRY="$(BUILD_NPM_REGISTRY)" BUILD_GOPROXY="$(BUILD_GOPROXY)" BUILD_PIP_INDEX_URL="$(BUILD_PIP_INDEX_URL)" BUILD_DEBIAN_MIRROR="$(BUILD_DEBIAN_MIRROR)" GO_BASE_IMAGE="$(GO_BASE_IMAGE)" NODE_BASE_IMAGE="$(NODE_BASE_IMAGE)" NODE_SLIM_BASE_IMAGE="$(NODE_SLIM_BASE_IMAGE)" NGINX_UNPRIVILEGED_BASE_IMAGE="$(NGINX_UNPRIVILEGED_BASE_IMAGE)" CLAUDE_CODE_CLI_VERSION="$(CLAUDE_CODE_CLI_VERSION)" QWEN_CLI_VERSION="$(QWEN_CLI_VERSION)" GEMINI_CLI_VERSION="$(GEMINI_CLI_VERSION)" ACTIONS_RUNNER_BASE_IMAGE="$(ACTIONS_RUNNER_BASE_IMAGE)" ACTIONS_RUNNER_GO_VERSION="$(ACTIONS_RUNNER_GO_VERSION)" ACTIONS_RUNNER_GO_DOWNLOAD_BASE_URL="$(ACTIONS_RUNNER_GO_DOWNLOAD_BASE_URL)" ACTIONS_RUNNER_GO_DOWNLOAD_FALLBACK_BASE_URL="$(ACTIONS_RUNNER_GO_DOWNLOAD_FALLBACK_BASE_URL)" ACTIONS_RUNNER_HELM_VERSION="$(ACTIONS_RUNNER_HELM_VERSION)" ACTIONS_RUNNER_HELM_DOWNLOAD_BASE_URL="$(ACTIONS_RUNNER_HELM_DOWNLOAD_BASE_URL)" ACTIONS_RUNNER_HELM_DOWNLOAD_FALLBACK_BASE_URL="$(ACTIONS_RUNNER_HELM_DOWNLOAD_FALLBACK_BASE_URL)" ACTIONS_RUNNER_NODE_VERSION="$(ACTIONS_RUNNER_NODE_VERSION)" ACTIONS_RUNNER_NODE_DOWNLOAD_BASE_URL="$(ACTIONS_RUNNER_NODE_DOWNLOAD_BASE_URL)" ACTIONS_RUNNER_NODE_DOWNLOAD_FALLBACK_BASE_URL="$(ACTIONS_RUNNER_NODE_DOWNLOAD_FALLBACK_BASE_URL)" ACTIONS_RUNNER_PNPM_VERSION="$(ACTIONS_RUNNER_PNPM_VERSION)" ACTIONS_RUNNER_BUF_VERSION="$(ACTIONS_RUNNER_BUF_VERSION)" ACTIONS_RUNNER_BUF_DOWNLOAD_BASE_URL="$(ACTIONS_RUNNER_BUF_DOWNLOAD_BASE_URL)" ACTIONS_RUNNER_BUF_DOWNLOAD_FALLBACK_BASE_URL="$(ACTIONS_RUNNER_BUF_DOWNLOAD_FALLBACK_BASE_URL)" ACTIONS_RUNNER_PROTOC_GEN_GO_VERSION="$(ACTIONS_RUNNER_PROTOC_GEN_GO_VERSION)" ACTIONS_RUNNER_PROTOC_GEN_GO_GRPC_VERSION="$(ACTIONS_RUNNER_PROTOC_GEN_GO_GRPC_VERSION)" ACTIONS_RUNNER_PROTOC_GEN_CONNECT_GO_VERSION="$(ACTIONS_RUNNER_PROTOC_GEN_CONNECT_GO_VERSION)" ACTIONS_RUNNER_PROTOC_GEN_ES_VERSION="$(ACTIONS_RUNNER_PROTOC_GEN_ES_VERSION)" ACTIONS_RUNNER_APT_MIRROR="$(ACTIONS_RUNNER_APT_MIRROR)" ACTIONS_RUNNER_APT_DISABLE_THIRD_PARTY="$(ACTIONS_RUNNER_APT_DISABLE_THIRD_PARTY)" PLATFORM_AUTH_NETWORK_CONTEXT="$(PLATFORM_AUTH_NETWORK_CONTEXT)" PLATFORM_CATALOG_CONTEXT="$(PLATFORM_CATALOG_CONTEXT)" PLATFORM_PROVIDER_CONTEXT="$(PLATFORM_PROVIDER_CONTEXT)" PLATFORM_PROFILE_CONTEXT="$(PLATFORM_PROFILE_CONTEXT)" PLATFORM_AGENT_RUNTIME_CONTEXT="$(PLATFORM_AGENT_RUNTIME_CONTEXT)" PLATFORM_NOTIFICATIONS_CONTEXT="$(PLATFORM_NOTIFICATIONS_CONTEXT)" CONSOLE_API_CONTEXT="$(CONSOLE_API_CONTEXT)" CONSOLE_WEB_CONTEXT="$(CONSOLE_WEB_CONTEXT)" SHOWCASE_API_CONTEXT="$(SHOWCASE_API_CONTEXT)"
+BAKE_ENV_COMMON := IMAGE_REGISTRY="$(IMAGE_REGISTRY_PREFIX)" IMAGE_TAG="$(IMAGE_TAG)" IMAGE_REVISION="$(IMAGE_REVISION)" SOURCE_URL_BASE="$(SOURCE_URL_BASE)" BUILD_NPM_REGISTRY="$(BUILD_NPM_REGISTRY)" BUILD_GOPROXY="$(BUILD_GOPROXY)" BUILD_PIP_INDEX_URL="$(BUILD_PIP_INDEX_URL)" BUILD_DEBIAN_MIRROR="$(BUILD_DEBIAN_MIRROR)" GO_BASE_IMAGE="$(GO_BASE_IMAGE)" NODE_BASE_IMAGE="$(NODE_BASE_IMAGE)" NODE_SLIM_BASE_IMAGE="$(NODE_SLIM_BASE_IMAGE)" NGINX_UNPRIVILEGED_BASE_IMAGE="$(NGINX_UNPRIVILEGED_BASE_IMAGE)" CLAUDE_CODE_CLI_VERSION="$(CLAUDE_CODE_CLI_VERSION)" QWEN_CLI_VERSION="$(QWEN_CLI_VERSION)" GEMINI_CLI_VERSION="$(GEMINI_CLI_VERSION)" PLATFORM_AUTH_NETWORK_CONTEXT="$(PLATFORM_AUTH_NETWORK_CONTEXT)" PLATFORM_CATALOG_CONTEXT="$(PLATFORM_CATALOG_CONTEXT)" PLATFORM_PROVIDER_CONTEXT="$(PLATFORM_PROVIDER_CONTEXT)" PLATFORM_PROFILE_CONTEXT="$(PLATFORM_PROFILE_CONTEXT)" PLATFORM_AGENT_RUNTIME_CONTEXT="$(PLATFORM_AGENT_RUNTIME_CONTEXT)" PLATFORM_NOTIFICATIONS_CONTEXT="$(PLATFORM_NOTIFICATIONS_CONTEXT)" CONSOLE_API_CONTEXT="$(CONSOLE_API_CONTEXT)" CONSOLE_WEB_CONTEXT="$(CONSOLE_WEB_CONTEXT)" SHOWCASE_API_CONTEXT="$(SHOWCASE_API_CONTEXT)"
 BAKE_ENV_LOCAL := $(BAKE_ENV_COMMON) DEFAULT_PLATFORMS="$(LOCAL_PLATFORM)"
 BAKE_ENV_PUSH := $(BAKE_ENV_COMMON) DEFAULT_PLATFORMS="$(IMAGE_PLATFORMS)"
 BAKE_CONTEXT_ALLOW := --allow=fs.read=$(PLATFORM_AUTH_NETWORK_CONTEXT) --allow=fs.read=$(PLATFORM_CATALOG_CONTEXT) --allow=fs.read=$(PLATFORM_PROVIDER_CONTEXT) --allow=fs.read=$(PLATFORM_PROFILE_CONTEXT) --allow=fs.read=$(PLATFORM_AGENT_RUNTIME_CONTEXT) --allow=fs.read=$(PLATFORM_NOTIFICATIONS_CONTEXT) --allow=fs.read=$(CONSOLE_API_CONTEXT) --allow=fs.read=$(CONSOLE_WEB_CONTEXT) --allow=fs.read=$(SHOWCASE_API_CONTEXT)
@@ -155,28 +131,6 @@ INFRASTRUCTURE_ADDONS_CHART ?= $(DEPLOY_DIR)/charts/infrastructure-addons
 INFRASTRUCTURE_ADDONS_VALUES ?= $(DEPLOY_DIR)/charts/infrastructure-addons/examples/observability.yaml
 INFRASTRUCTURE_ADDONS_TIMEOUT ?= 10m
 INFRASTRUCTURE_ADDONS_HELM_ARGS ?=
-
-ARC_CHART_VERSION ?= 0.14.1
-ARC_CONTROLLER_RELEASE ?= arc
-ARC_CONTROLLER_NAMESPACE ?= arc-systems
-ARC_CONTROLLER_VALUES ?= $(DEPLOY_DIR)/values/github-actions-runner-controller.yaml
-ARC_RUNNER_RELEASE ?= code-code-k8s
-ARC_RUNNER_NAMESPACE ?= arc-runners
-ARC_RUNNER_VALUES ?= $(DEPLOY_DIR)/values/github-actions-runner-scale-set.yaml
-ARC_GITHUB_CONFIG_URL ?= https://github.com/code-2-code
-ARC_GITHUB_AUTH_SECRET ?= github-arc-auth
-ARC_RUNNER_CACHE_MANIFEST ?= $(DEPLOY_DIR)/resources/github-actions-runner-cache.yaml
-ARC_RUNNER_IMAGE ?=
-ARC_RUNNER_MIRRORS_CONFIGMAP ?= code-code-runner-mirrors
-RUNNER_GOPROXY ?=
-RUNNER_GOSUMDB ?=
-RUNNER_GOPRIVATE ?=
-RUNNER_NPM_REGISTRY ?=
-RUNNER_PIP_INDEX_URL ?=
-RUNNER_UV_INDEX_URL ?=
-ARC_CONTROLLER_HELM_ARGS ?=
-ARC_RUNNER_HELM_ARGS ?=
-ARC_RUNNER_IMAGE_ARGS = $(if $(ARC_RUNNER_IMAGE),--set template.spec.initContainers[0].image='$(ARC_RUNNER_IMAGE)' --set template.spec.containers[0].image='$(ARC_RUNNER_IMAGE)')
 
 INFRA_K3D_CLUSTER ?= code-code-infra
 INFRA_K3D_K3S_IMAGE ?= rancher/k3s:v1.35.3-k3s1
@@ -256,17 +210,9 @@ print-config: ## 打印当前生效的变量
 build: ## buildx bake：构建当前主机架构镜像并 load 到本地 docker
 	@cd "$(REPO_ROOT)" && $(BAKE_ENV_LOCAL) $(BUILDX) bake $(BAKE_OPTS) --pull --load $(BAKE_TARGET)
 
-.PHONY: runner-image-build
-runner-image-build: ## 构建带 tool cache 的 ARC runner 镜像并 load 到本地 docker
-	@cd "$(REPO_ROOT)" && $(BAKE_ENV_LOCAL) IMAGE_TAG="$(ACTIONS_RUNNER_IMAGE_TAG)" $(BUILDX) bake $(BAKE_OPTS) --pull --load actions-runner-toolcache
-
 .PHONY: push
 push: _require_registry ## buildx bake：构建并推送到 IMAGE_REGISTRY
 	@cd "$(REPO_ROOT)" && $(BAKE_ENV_PUSH) $(BUILDX) bake $(BAKE_OPTS) --pull --push $(BAKE_TARGET)
-
-.PHONY: runner-image-push
-runner-image-push: _require_registry ## 构建并推送带 tool cache 的 ARC runner 镜像
-	@cd "$(REPO_ROOT)" && $(BAKE_ENV_PUSH) IMAGE_TAG="$(ACTIONS_RUNNER_IMAGE_TAG)" $(BUILDX) bake $(BAKE_OPTS) --pull --push actions-runner-toolcache
 
 .PHONY: bake-print
 bake-print: ## buildx bake --print：打印解析后的构建配置
@@ -475,89 +421,6 @@ diff: _require_current_chart_path ## helm diff upgrade（需要 helm-diff 插件
 		-f "$(VALUES_PATH)" \
 		$(HELM_SET_IMAGE) \
 		--allow-unreleased
-
-##@ GitHub Actions runners
-
-.PHONY: arc-auth-secret-from-gh
-arc-auth-secret-from-gh: ## 用当前 gh token 创建/更新 ARC GitHub auth Secret（不会打印 token）
-	@set -euo pipefail; \
-	$(KUBECTL) create namespace "$(ARC_RUNNER_NAMESPACE)" --dry-run=client -o yaml | $(KUBECTL) apply -f -; \
-	token="$$( $(GH) auth token )"; \
-	token_b64="$$( printf '%s' "$$token" | base64 | tr -d '\n' )"; \
-	{ \
-		printf 'apiVersion: v1\n'; \
-		printf 'kind: Secret\n'; \
-		printf 'metadata:\n'; \
-		printf '  name: %s\n' "$(ARC_GITHUB_AUTH_SECRET)"; \
-		printf '  namespace: %s\n' "$(ARC_RUNNER_NAMESPACE)"; \
-		printf 'type: Opaque\n'; \
-		printf 'data:\n'; \
-		printf '  github_token: %s\n' "$$token_b64"; \
-	} | $(KUBECTL) apply -f -
-
-.PHONY: arc-controller-up
-arc-controller-up: ## 安装/更新官方 ARC controller
-	@$(HELM) upgrade --install "$(ARC_CONTROLLER_RELEASE)" \
-		oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller \
-		--version "$(ARC_CHART_VERSION)" \
-		--namespace "$(ARC_CONTROLLER_NAMESPACE)" \
-		--create-namespace \
-		--atomic --wait --timeout 5m \
-		-f "$(ARC_CONTROLLER_VALUES)" \
-		$(ARC_CONTROLLER_HELM_ARGS)
-
-.PHONY: arc-cache-up
-arc-cache-up: ## 创建/更新 ARC runner 包管理缓存 PVC
-	$(KUBECTL) create namespace "$(ARC_RUNNER_NAMESPACE)" --dry-run=client -o yaml | $(KUBECTL) apply -f -
-	$(KUBECTL) apply -f "$(ARC_RUNNER_CACHE_MANIFEST)"
-
-.PHONY: arc-runner-mirrors-up
-arc-runner-mirrors-up: ## 从本地环境变量创建/更新 runner 包管理源 ConfigMap（无值则跳过）
-	@set -euo pipefail; \
-	args=(); \
-	[ -z "$(RUNNER_GOPROXY)" ] || args+=(--from-literal=GOPROXY='$(RUNNER_GOPROXY)'); \
-	[ -z "$(RUNNER_GOSUMDB)" ] || args+=(--from-literal=GOSUMDB='$(RUNNER_GOSUMDB)'); \
-	[ -z "$(RUNNER_GOPRIVATE)" ] || args+=(--from-literal=GOPRIVATE='$(RUNNER_GOPRIVATE)'); \
-	if [ -n "$(RUNNER_NPM_REGISTRY)" ]; then \
-		args+=(--from-literal=NPM_CONFIG_REGISTRY='$(RUNNER_NPM_REGISTRY)'); \
-		args+=(--from-literal=npm_config_registry='$(RUNNER_NPM_REGISTRY)'); \
-	fi; \
-	[ -z "$(RUNNER_PIP_INDEX_URL)" ] || args+=(--from-literal=PIP_INDEX_URL='$(RUNNER_PIP_INDEX_URL)'); \
-	if [ -n "$(RUNNER_UV_INDEX_URL)" ]; then \
-		args+=(--from-literal=UV_INDEX_URL='$(RUNNER_UV_INDEX_URL)'); \
-	elif [ -n "$(RUNNER_PIP_INDEX_URL)" ]; then \
-		args+=(--from-literal=UV_INDEX_URL='$(RUNNER_PIP_INDEX_URL)'); \
-	fi; \
-	if [ "$${#args[@]}" -eq 0 ]; then \
-		printf "[arc-runner-mirrors-up] no runner mirror variables set; skipped\n"; \
-		exit 0; \
-	fi; \
-	$(KUBECTL) create namespace "$(ARC_RUNNER_NAMESPACE)" --dry-run=client -o yaml | $(KUBECTL) apply -f -; \
-	$(KUBECTL) -n "$(ARC_RUNNER_NAMESPACE)" create configmap "$(ARC_RUNNER_MIRRORS_CONFIGMAP)" "$${args[@]}" --dry-run=client -o yaml | $(KUBECTL) apply -f -
-
-.PHONY: arc-runner-up
-arc-runner-up: ## 安装/更新 code-code org runner scale set
-	@$(HELM) upgrade --install "$(ARC_RUNNER_RELEASE)" \
-		oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
-		--version "$(ARC_CHART_VERSION)" \
-		--namespace "$(ARC_RUNNER_NAMESPACE)" \
-		--create-namespace \
-		--atomic --wait --timeout 10m \
-		-f "$(ARC_RUNNER_VALUES)" \
-		--set githubConfigUrl="$(ARC_GITHUB_CONFIG_URL)" \
-		--set githubConfigSecret="$(ARC_GITHUB_AUTH_SECRET)" \
-		$(ARC_RUNNER_IMAGE_ARGS) \
-		$(ARC_RUNNER_HELM_ARGS)
-
-.PHONY: arc-up
-arc-up: arc-auth-secret-from-gh arc-cache-up arc-runner-mirrors-up arc-controller-up arc-runner-up ## 创建 Secret、缓存 PVC、可选源配置，并安装/更新 ARC controller + runner scale set
-
-.PHONY: arc-status
-arc-status: ## 查看 ARC Helm releases 和 runner pods
-	$(HELM) list -n "$(ARC_CONTROLLER_NAMESPACE)"
-	$(HELM) list -n "$(ARC_RUNNER_NAMESPACE)"
-	$(KUBECTL) get pods -n "$(ARC_CONTROLLER_NAMESPACE)"
-	$(KUBECTL) get pods -n "$(ARC_RUNNER_NAMESPACE)"
 
 ##@ Infra cluster
 

@@ -6,33 +6,14 @@ Current tested upstream baseline:
 
 - Istio Ambient: `1.29.2` (`base`, `istiod`, `cni`, `ztunnel` official charts)
 - Gateway API CRDs: `v1.4.0` Experimental channel, bundled in `deploy/charts/cluster-bootstrap/crds`
-- GitHub Actions Runner Controller: `0.14.1` (`gha-runner-scale-set-controller`, `gha-runner-scale-set` official OCI charts)
+- GitLab Helm chart: `9.11.2`
 
-GitHub Actions runner connectivity is an infrastructure concern, not a source
-repository concern. Self-hosted runners need outbound HTTPS access to GitHub's
-Actions endpoints. If a domestic cluster cannot reach GitHub reliably, keep
-workflows unchanged and route runner egress through cluster-owned networking or
-deploy-local Helm overrides. Package and image pull pressure should use the
-existing build mirror variables and in-cluster registry/cache chart instead of
-hardcoded workflow fallbacks.
-
-The development image infrastructure chart owns pull-through registry caches
-for Docker Hub, GHCR, registry.k8s.io, and Quay. When those caches are deployed
-behind a domestic egress proxy, set `cache.proxy.existingSecret` or local,
-credential-free `cache.proxy.*Url` overrides on that chart. Do not put proxy
-URLs with credentials into committed values or GitHub Actions variables.
-
-The ARC runner scale set mounts a bounded package cache PVC at
-`/home/runner/.cache`, expects Go to be pre-populated in the runner image's
-standard GitHub tool cache at `/opt/hostedtoolcache`, and keeps Go module,
-Go build, npm, pnpm, pip, uv, and Corepack caches under that PVC. The runner
-optionally reads package mirror variables from the `code-code-runner-mirrors`
-ConfigMap. Create that ConfigMap from deploy-local environment variables with
-`make -C deploy arc-runner-mirrors-up`. Keep credentialed HTTP proxy settings
-in Kubernetes Secrets referenced by the official ARC
-`proxy.*.credentialSecretRef` values, or in ignored local Helm overrides. Do
-not put proxy credentials or cluster-specific mirror URLs in workflow files,
-repo variables, or committed values.
+External GitHub CI and GitHub self-hosted runners are intentionally not
+configured here. Use the internal GitLab CI/CD stack for repository automation
+after migration. Add GitLab Runner as a separate, explicit install using the
+official GitLab Runner Helm chart and Kubernetes executor; keep regional
+mirrors, pull-through caches, and proxy choices in external infrastructure or
+ignored local overrides.
 
 Istio 1.29 is officially supported on Kubernetes 1.31-1.35. Its current
 official Gateway API tasks and Ambient Helm install docs use Gateway API
@@ -73,7 +54,6 @@ make -C deploy gateway-api-crds-apply
 | ---- | -------------- | ------- |
 | `istiod.yaml` | [istio/istiod](https://istio.io/latest/docs/ambient/install/helm/) | `helm repo add istio https://istio-release.storage.googleapis.com/charts`<br>`helm upgrade --install istio-base istio/base --version 1.29.2 -n istio-system --create-namespace --wait`<br>`helm upgrade --install istiod istio/istiod --version 1.29.2 -n istio-system -f deploy/values/istiod.yaml --wait`<br>`helm upgrade --install istio-cni istio/cni --version 1.29.2 -n istio-system --wait`<br>`helm upgrade --install ztunnel istio/ztunnel --version 1.29.2 -n istio-system --wait` |
 | `temporal.yaml` | [temporalio/temporal](https://github.com/temporalio/helm-charts) | `helm repo add temporalio https://go.temporal.io/helm-charts`<br>`helm install temporal temporalio/temporal -n code-code-infra -f deploy/values/temporal.yaml --create-namespace` |
-| `github-actions-runner-controller.yaml` | [gha-runner-scale-set-controller](https://github.com/actions/actions-runner-controller) | `make -C deploy arc-controller-up` |
-| `github-actions-runner-scale-set.yaml` | [gha-runner-scale-set](https://github.com/actions/actions-runner-controller) | Run `make -C deploy arc-auth-secret-from-gh`, then `make -C deploy arc-runner-up` |
+| `gitlab/gitlab.yaml` | [gitlab/gitlab](https://docs.gitlab.com/charts/) | `make -C deploy gitlab-up` |
 
 Pre-create the `postgres-auth` Secret in `code-code-infra` (with key `POSTGRES_PASSWORD`) before installing Temporal — its schema job and frontend both consume it.

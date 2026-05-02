@@ -18,7 +18,8 @@ Use these current official references before changing this repository:
 - Helm chart label conventions: https://helm.sh/docs/chart_best_practices/labels/
 - Docker build best practices and build contexts: https://docs.docker.com/build/building/best-practices/ and https://docs.docker.com/build/concepts/context/
 - Docker Buildx Bake additional contexts: https://docs.docker.com/build/bake/contexts/
-- GitHub Actions least-privilege `GITHUB_TOKEN` permissions and reusable workflows: https://docs.github.com/en/actions/tutorials/authenticate-with-github_token and https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows
+- GitLab Helm chart: https://docs.gitlab.com/charts/
+- GitLab Runner Helm chart: https://docs.gitlab.com/runner/install/kubernetes.html
 - OCI image annotations: https://github.com/opencontainers/image-spec/blob/main/annotations.md
 
 ## Kubernetes And Helm
@@ -40,14 +41,11 @@ Use these current official references before changing this repository:
 
 ## CI And Verification
 
-- If GitHub Actions are added here, use least-privilege `permissions`, explicit repository or path inputs, and reusable workflows for repeated image build logic.
-- Public CI logs must not echo environment-derived values or Helm/BuildKit argument strings. Suppress Make command echo for targets that pass registry, mirror, proxy, token, or credential-adjacent values, and run the CI log input guard before build checks.
-- Public repositories must not run self-hosted runner workflows on untrusted pull request events. Keep ARC-backed public CI limited to trusted `push` or maintainer-triggered `workflow_dispatch` events unless the repository is made private.
-- If self-hosted GitHub Actions runners are added, use the official Actions Runner Controller `gha-runner-scale-set-controller` and `gha-runner-scale-set` Helm charts. Keep controller pods and runner pods in separate namespaces, pass GitHub credentials through Kubernetes Secret references, do not commit token material, and set bounded resources for controller, listener, and runner pods.
-- The runner scale set name is the `runs-on` contract. Change it deliberately and update workflows in the same change.
-- Keep source repositories and workflows network-agnostic. If GitHub connectivity is unstable, solve it at the runner/cluster egress layer or with deploy-owned package and image caches through ignored local env or Helm overrides; do not commit proxy URLs, proxy credentials, or region-specific mirror assumptions into source repositories or workflows.
-- Runner-level tool mirrors must come from deploy-local environment, the `code-code-runner-mirrors` ConfigMap, or ignored Helm overrides. Credentialed HTTP proxies must use Kubernetes Secrets through the official ARC proxy Secret references or ignored local overrides, and CI must mask and reject credential-looking proxy or mirror values before tool setup steps run.
-- Custom ARC runner images must use the official `ghcr.io/actions/actions-runner` image content as their base, optionally pulled through a deploy-local mirror, pre-populate setup-action toolchains through the standard runner tool cache, and keep package caches under bounded Kubernetes volumes rather than workflow-managed ad hoc caches.
+- External GitHub CI and GitHub self-hosted runners are intentionally absent from this repository.
+- Run deployment checks locally or from the internal GitLab CI/CD stack after repository migration.
+- When internal GitLab CI/CD is added, use the official GitLab Runner Helm chart with the Kubernetes executor, runner authentication token stored in a Kubernetes Secret, bounded concurrency/resources, and runner cache backed by internal object storage or an external cache service.
+- CI logs must not echo environment-derived values or Helm/BuildKit argument strings. Suppress Make command echo for targets that pass registry, mirror, proxy, token, or credential-adjacent values.
+- Keep source repositories and internal CI network-agnostic. If external connectivity is unstable, solve it at the runner or cluster egress layer, or with external package/image caches through ignored local env or Helm overrides; do not commit proxy URLs, proxy credentials, or region-specific mirror assumptions into source repositories.
 - Validate deployment changes with the narrowest meaningful checks:
   - `make -C deploy lint-all`
   - `make -C deploy template-all`

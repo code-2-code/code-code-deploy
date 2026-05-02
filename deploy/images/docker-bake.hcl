@@ -85,86 +85,6 @@ variable "GEMINI_CLI_VERSION" {
   default = "0.39.1"
 }
 
-variable "ACTIONS_RUNNER_BASE_IMAGE" {
-  default = "ghcr.io/actions/actions-runner:2.333.1"
-}
-
-variable "ACTIONS_RUNNER_GO_VERSION" {
-  default = "1.26.2"
-}
-
-variable "ACTIONS_RUNNER_GO_DOWNLOAD_BASE_URL" {
-  default = "https://go.dev/dl"
-}
-
-variable "ACTIONS_RUNNER_GO_DOWNLOAD_FALLBACK_BASE_URL" {
-  default = ""
-}
-
-variable "ACTIONS_RUNNER_HELM_VERSION" {
-  default = "3.20.0"
-}
-
-variable "ACTIONS_RUNNER_HELM_DOWNLOAD_BASE_URL" {
-  default = "https://get.helm.sh"
-}
-
-variable "ACTIONS_RUNNER_HELM_DOWNLOAD_FALLBACK_BASE_URL" {
-  default = ""
-}
-
-variable "ACTIONS_RUNNER_NODE_VERSION" {
-  default = "24.15.0"
-}
-
-variable "ACTIONS_RUNNER_NODE_DOWNLOAD_BASE_URL" {
-  default = "https://nodejs.org/dist"
-}
-
-variable "ACTIONS_RUNNER_NODE_DOWNLOAD_FALLBACK_BASE_URL" {
-  default = ""
-}
-
-variable "ACTIONS_RUNNER_PNPM_VERSION" {
-  default = "10.33.0"
-}
-
-variable "ACTIONS_RUNNER_BUF_VERSION" {
-  default = "1.69.0"
-}
-
-variable "ACTIONS_RUNNER_BUF_DOWNLOAD_BASE_URL" {
-  default = "https://github.com/bufbuild/buf/releases/download"
-}
-
-variable "ACTIONS_RUNNER_BUF_DOWNLOAD_FALLBACK_BASE_URL" {
-  default = ""
-}
-
-variable "ACTIONS_RUNNER_PROTOC_GEN_GO_VERSION" {
-  default = "1.36.11"
-}
-
-variable "ACTIONS_RUNNER_PROTOC_GEN_GO_GRPC_VERSION" {
-  default = "1.5.1"
-}
-
-variable "ACTIONS_RUNNER_PROTOC_GEN_CONNECT_GO_VERSION" {
-  default = "1.19.2"
-}
-
-variable "ACTIONS_RUNNER_PROTOC_GEN_ES_VERSION" {
-  default = "2.11.0"
-}
-
-variable "ACTIONS_RUNNER_APT_MIRROR" {
-  default = ""
-}
-
-variable "ACTIONS_RUNNER_APT_DISABLE_THIRD_PARTY" {
-  default = "false"
-}
-
 variable "GO_BASE_IMAGE" {
   default = "golang:1.26-bookworm"
 }
@@ -264,12 +184,6 @@ group "runtime" {
     "agent-cli-qwen",
     "agent-cli-gemini",
     "cli-output-sidecar",
-  ]
-}
-
-group "runner" {
-  targets = [
-    "actions-runner-toolcache",
   ]
 }
 
@@ -548,35 +462,4 @@ target "cli-output-sidecar" {
   context    = "."
   dockerfile = "deploy/images/release/cli-output-sidecar.Dockerfile"
   tags       = ["${IMAGE_REGISTRY}code-code/cli-output-sidecar:${IMAGE_TAG}"]
-}
-
-target "actions-runner-toolcache" {
-  inherits   = ["_multiarch"]
-  context    = "."
-  dockerfile = "deploy/images/runner/actions-runner-toolcache.Dockerfile"
-  args = {
-    ACTIONS_RUNNER_BASE_IMAGE       = "${ACTIONS_RUNNER_BASE_IMAGE}"
-    GO_VERSION                      = "${ACTIONS_RUNNER_GO_VERSION}"
-    GO_DOWNLOAD_BASE_URL            = "${ACTIONS_RUNNER_GO_DOWNLOAD_BASE_URL}"
-    GO_DOWNLOAD_FALLBACK_BASE_URL   = "${ACTIONS_RUNNER_GO_DOWNLOAD_FALLBACK_BASE_URL}"
-    HELM_VERSION                    = "${ACTIONS_RUNNER_HELM_VERSION}"
-    HELM_DOWNLOAD_BASE_URL          = "${ACTIONS_RUNNER_HELM_DOWNLOAD_BASE_URL}"
-    HELM_DOWNLOAD_FALLBACK_BASE_URL = "${ACTIONS_RUNNER_HELM_DOWNLOAD_FALLBACK_BASE_URL}"
-    NODE_VERSION                    = "${ACTIONS_RUNNER_NODE_VERSION}"
-    NODE_DOWNLOAD_BASE_URL          = "${ACTIONS_RUNNER_NODE_DOWNLOAD_BASE_URL}"
-    NODE_DOWNLOAD_FALLBACK_BASE_URL = "${ACTIONS_RUNNER_NODE_DOWNLOAD_FALLBACK_BASE_URL}"
-    PNPM_VERSION                    = "${ACTIONS_RUNNER_PNPM_VERSION}"
-    BUF_VERSION                     = "${ACTIONS_RUNNER_BUF_VERSION}"
-    BUF_DOWNLOAD_BASE_URL           = "${ACTIONS_RUNNER_BUF_DOWNLOAD_BASE_URL}"
-    BUF_DOWNLOAD_FALLBACK_BASE_URL  = "${ACTIONS_RUNNER_BUF_DOWNLOAD_FALLBACK_BASE_URL}"
-    PROTOC_GEN_GO_VERSION           = "${ACTIONS_RUNNER_PROTOC_GEN_GO_VERSION}"
-    PROTOC_GEN_GO_GRPC_VERSION      = "${ACTIONS_RUNNER_PROTOC_GEN_GO_GRPC_VERSION}"
-    PROTOC_GEN_CONNECT_GO_VERSION   = "${ACTIONS_RUNNER_PROTOC_GEN_CONNECT_GO_VERSION}"
-    PROTOC_GEN_ES_VERSION           = "${ACTIONS_RUNNER_PROTOC_GEN_ES_VERSION}"
-    NPM_CONFIG_REGISTRY             = "${BUILD_NPM_REGISTRY}"
-    GOPROXY                         = "${BUILD_GOPROXY}"
-    APT_MIRROR                      = "${ACTIONS_RUNNER_APT_MIRROR}"
-    APT_DISABLE_THIRD_PARTY         = "${ACTIONS_RUNNER_APT_DISABLE_THIRD_PARTY}"
-  }
-  tags = ["${IMAGE_REGISTRY}code-code/actions-runner-toolcache:${IMAGE_TAG}"]
 }

@@ -47,7 +47,7 @@ global:
     enableUsagePing: false
     enableSeatLink: false
     initialDefaults:
-      signupEnabled: false
+      signupEnabled: true
     object_store:
       enabled: true
       proxy_download: true
